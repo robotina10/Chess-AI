@@ -3,9 +3,8 @@
 #include <iostream>
  
 
-Move::Move(int from, int to, int piece, int capturedPiece, int promotion, int specialMove)
-// forgot double pawn push, just all specisal moves
-	:move(((specialMove & 0xf) << 24) | ((promotion & 0xf) << 20) | ((capturedPiece & 0xf) << 16) | ((piece & 0xf) << 12) | ((to & 0x3f) << 6) | (from & 0x3f)) {
+Move::Move(int from, int to, int piece, int capturedPiece, int specialMove)
+	:move(((specialMove & 0xf) << 20) | ((capturedPiece & 0xf) << 16) | ((piece & 0xf) << 12) | ((to & 0x3f) << 6) | (from & 0x3f)) {
 }
 
 int Move::getFrom()
@@ -30,7 +29,7 @@ int Move::getPieceColor()
 
 int Move::getCapturedPiece()
 {
-	return ((move >> 16) & 0xf);
+	return (move >> 16) & 0xf;
 }
 
 int Move::getCaptureColor()
@@ -38,25 +37,37 @@ int Move::getCaptureColor()
 	return (getCapturedPiece() < 6) ? 12 : 13;
 }
 
+int Move::getEnPassant()
+{
+	return (move >> 20) & EN_PASSANT;
+}
+
 int Move::getPromotion()
 {
-	return (move >> 21) & 0xf;
+	return (move >> 20) & 0xf;
 }
 
-int Move::isCastling() //
+int Move::getCastling()
 {
-	return (move >> 25) & 0xf;
-}
-
-int Move::isDoublePawnPush() //
-{
-	return (move >> 25) & 0xf;
+	return (move >> 20) & 0xf;
 }
 
 bool Move::isCapture() 
 {
 	return getCapturedPiece() != 14; // 14 is EMPTY but it is in board.h
 }
+
+bool Move::isPromotion()
+{
+	return ((move >> 20) & 0xf) == GENERIC_PROM;
+}
+
+void Move::setPromotion(int promotionPiece)
+{
+	move &= ~(0xfff << 20);
+	move |= (promotionPiece & 0xf) << 20;
+}
+
 
 void Move::printMove()
 {
@@ -66,6 +77,4 @@ void Move::printMove()
 	std::cout << getCapturedPiece();
 	std::cout << isCapture();
 	std::cout << getPromotion();
-	std::cout << isCastling();
-	std::cout << isDoublePawnPush();
 }

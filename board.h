@@ -1,7 +1,15 @@
 #pragma once
 #include <iostream>
 #include "move.h"
-
+/*
+a-file             0x0101010101010101
+h-file             0x8080808080808080
+1st rank           0x00000000000000FF
+8th rank           0xFF00000000000000
+a1-h8 diagonal     0x8040201008040201
+h1-a8 antidiagonal 0x0102040810204080
+light squares      0x55AA55AA55AA55AA
+dark squares       0xAA55AA55AA55AA55*/
 typedef std::uint64_t U64;
 
 enum Pieces {wKing, wQueen, wRook, wBishop, wKnight, wPawn, bKing, bQueen, bRook, bBishop, bKnight, bPawn, Whites, Blacks, EMPTY };
@@ -10,8 +18,8 @@ enum CastlingRights { wKingSide, wQueenSide, bKingSide, bQueenSide };
 
 const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-const U64 notAFile = 0xfefefefefefefefe;
-const U64 notHFile = 0x7f7f7f7f7f7f7f7f;
+const U64 notAFile = 0xfefefefefefefefe; // ~0x0101010101010101
+const U64 notHFile = 0x7f7f7f7f7f7f7f7f; // ~0x8080808080808080
 
 U64 southOne(U64 b);
 U64 northOne(U64 b);
@@ -38,11 +46,12 @@ class Board {
 public:
 	void setBoard(std::string FEN = defaultFEN);
 	Pieces getPiece(int pos);
+	void initAttackArr();
 
 	void getWhitePawnMoves(MoveList& moveList);
 	void getBlackPawnMoves(MoveList& moveList);
 	void getKnightMoves(Pieces knight, MoveList& moveList);
-	void getMoves(MoveList& moveList);
+	int generateLegalMoves(MoveList& moveList);
 
 	void placePiece(Pieces piece, int pos);
 	void removePiece(Pieces piece, int pos);

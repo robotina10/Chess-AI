@@ -4,4 +4,5 @@
 #include <SFML/Graphics.hpp>
 
 int calcSquarePos(sf::Vector2i pos);
-void makeMove(sf::RenderWindow& window, ChessEngine& chess, int& from, Pieces& piece);
+int getMoveIndex(MoveList& moveList, int from, int to);
+void makeMove(sf::RenderWindow& window, ChessEngine& chess, int& from, int to, Pieces& piece, int i, SpecialMove promotion);

@@ -1,9 +1,6 @@
 #pragma once
 
-const int EN_PASSANT = 1;
-const int DOUBLE_PUSH = 2;
-const int KING_CASTLING = 3;
-const int QUEEN_CASTLING = 4;
+enum SpecialMove { NONE, EN_PASSANT, KING_CASTLING, QUEEN_CASTLING, GENERIC_PROM, QUEEN_PROM, ROOK_PROM, BISHOP_PROM, KNIGHT_PROM };
 
 class Move
 {
@@ -11,17 +8,20 @@ class Move
 
 public:
 	Move() {};
-	Move(int from, int to, int piece, int capturedPiece, int promotion, int specialMove);
+	Move(int from, int to, int piece, int capturedPiece, int specialMove);
 	int getFrom();
 	int getTo();
 	int getPiece();
 	int getPieceColor();
 	int getCapturedPiece();
 	int getCaptureColor();
+	int getEnPassant();
 	int getPromotion();
-	int isCastling();
-	int isDoublePawnPush();
+	int getCastling();
 	bool isCapture();
+	bool isPromotion();
+	void setPromotion(int promotionPiece);
+	
 	void printMove();
 };
 

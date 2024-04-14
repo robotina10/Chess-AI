@@ -25,18 +25,16 @@ int getMoveIndex(MoveList& moveList, int from, int to)
     return -1;
 }
 
-void makeMove(sf::RenderWindow &window, ChessEngine &chess, int &from, Pieces &piece)
+void makeMove(sf::RenderWindow &window, ChessEngine &chess, int &from, int to, Pieces &piece, int i, SpecialMove promotion)
 {
-    int to = calcSquarePos(sf::Mouse::getPosition(window));
-    int i = getMoveIndex(chess.moveList, from, to);
-    if (i == -1) {
-        from = to;
-        return;
+    Move move = chess.moveList.moves[i];
+    if (move.getPromotion()) {
+        move.setPromotion(promotion);
     }
-    chess.board.makeMove(chess.moveList.moves[i]);
-    chess.gameMoveList.moves[chess.gameMoveList.count++] = (chess.moveList.moves[i]);
+    chess.board.makeMove(move);
+    chess.gameMoveList.moves[chess.gameMoveList.count++] = move;
     chess.moveList.count = 0;
-    chess.board.getMoves(chess.moveList);
+    chess.board.generateLegalMoves(chess.moveList);
     piece = EMPTY;
     from = -1;
 }

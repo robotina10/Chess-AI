@@ -3,14 +3,17 @@
 #include "pawnMoves.h"
 #include "knightMoves.h"
 
+//U64 northOne(U64 b) { return b << 8; }
+//U64 southOne(U64 b) { return b >> 8; }
 U64 northOne(U64 b) { return b >> 8; }
 U64 southOne(U64 b) { return b << 8; }
-U64 eastOne(U64 b) { return (b >> 1) & notAFile; }
-U64 noEaOne(U64 b) { return (b >> 7) & notAFile; }
-U64 soEaOne(U64 b) { return (b << 9) & notAFile; }
-U64 westOne(U64 b) { return (b << 1) & notHFile; }
-U64 soWeOne(U64 b) { return (b << 7) & notHFile; }
-U64 noWeOne(U64 b) { return (b >> 9) & notHFile; }
+U64 eastOne(U64 b) { return (b & notHFile) << 1; }
+U64 noEaOne(U64 b) { return (b & notHFile) << 9; }
+U64 soEaOne(U64 b) { return (b & notHFile) >> 7; }
+U64 westOne(U64 b) { return (b & notAFile) >> 1; }
+U64 soWeOne(U64 b) { return (b & notAFile) >> 9; }
+U64 noWeOne(U64 b) { return (b & notAFile) << 7; }
+
 
 int bitScanForward(U64 bb) { // what if bb == 0
 	static const int index64[64] = {
@@ -35,13 +38,14 @@ int bitScanForwardWithReset(U64 &bb) {
 }
 
 
-void Board::getMoves(MoveList& moveList)
+int Board::generateLegalMoves(MoveList& moveList)
 {
 	getWhitePawnMoves(moveList);
 	getBlackPawnMoves(moveList);
 	getKnightMoves(wKnight, moveList);
 	getKnightMoves(bKnight, moveList);
 	printMoves(moveList);
+	return moveList.count;
 }
 
 void Board::makeMove(Move move) // castling promotion en passant
@@ -60,7 +64,12 @@ void Board::makeMove(Move move) // castling promotion en passant
 
 void Board::unmakeMove(Move move)
 {
+	makeMove(move);
+}
 
+void Board::initAttackArr()
+{
+	initKnightAttacks();
 }
 
 U64 Board::getEmpty() { return ~occupied; };
@@ -110,10 +119,9 @@ void Board::removePiece(Pieces piece, int pos)
 
 void Board::setBoard(std::string FEN)
 {
-	//FEN = "rnbqkbnr//8/8/8/8//RNBQKBNR";
 	int rank = 0;
 	int file = 0;
-	size_t i = 0;
+	int i = 0;
 	for (char c: FEN) {
 		i++;
 		if (c == ' ')

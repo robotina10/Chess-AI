@@ -1,6 +1,9 @@
 #pragma once
 #include "board.h"
 
+const U64 rank8 = 0xff00000000000000;
+const U64 rank1 = 0xff;
+
 /*U64 wPawnAttacks[64];
 U64 bPawnAttacks[64];
 
@@ -77,17 +80,6 @@ U64 bPawnsCaptureEast(U64 bp, U64 enemy)
 	return soEaOne(bp) & enemy;
 }
 
-U64 wPawnsPromotion()
-{
-	return 0;
-}
-
-
-U64 bPawnsPromotion()
-{
-	return 0;
-}
-
 U64 wPawnsEnPassant()
 {
 	return 0;
@@ -98,11 +90,20 @@ U64 bPawnsEnPassant()
 	return 0;
 }
 
-void getMovesFromPushBB(MoveList& moveList, U64 bb, Pieces piece, int doublePush, int pushDistance)
+bool isPromotion(int to)
+{
+	return (to > 55 || to < 8) ? true : false;
+}
+
+void getMovesFromPushBB(MoveList& moveList, U64 bb, Pieces piece, int pushDistance)
 {
 	while (bb) {
 		int to = bitScanForwardWithReset(bb);
-		moveList.moves[moveList.count++] = Move(to + pushDistance, to, piece, EMPTY, 0, doublePush);
+		if (isPromotion(to)) {
+			moveList.moves[moveList.count++] = Move(to + pushDistance, to, piece, EMPTY, GENERIC_PROM);
+		}
+		else
+			moveList.moves[moveList.count++] = Move(to + pushDistance, to, piece, EMPTY, NONE);
 	}
 }
 
@@ -111,7 +112,12 @@ void Board::getMovesFromPawnCaptureBB(MoveList& moveList, U64 bb, Pieces piece, 
 	while (bb) {
 		int to = bitScanForwardWithReset(bb);
 		Pieces capturedPiece = getPiece(to);
-		moveList.moves[moveList.count++] = Move(to + captureDistance, to, piece, capturedPiece, 0, 0);
+		if (isPromotion(to)) {
+			moveList.moves[moveList.count++] = Move(to + captureDistance, to, piece, capturedPiece, GENERIC_PROM);
+
+		}
+		else
+			moveList.moves[moveList.count++] = Move(to + captureDistance, to, piece, capturedPiece, NONE);
 	}
 }
 
@@ -119,17 +125,16 @@ void Board::getWhitePawnMoves(MoveList& moveList)
 {
 	U64 empty = getEmpty();
 	U64 push = wPawnsPush(wPawnsCanPush(bb[wPawn], empty), empty);
-	getMovesFromPushBB(moveList, push, wPawn, 0, 8);
+	getMovesFromPushBB(moveList, push, wPawn, 8);
 
 	U64 doublePush = wPawnsDoublePush(wPawnsCanDoublePush(bb[wPawn], empty), empty);
-	getMovesFromPushBB(moveList, doublePush, wPawn, DOUBLE_PUSH, 16);
+	getMovesFromPushBB(moveList, doublePush, wPawn, 16);
 
 	U64 westCaptures = wPawnsCaptureWest(bb[wPawn], bb[Blacks]);
 	getMovesFromPawnCaptureBB(moveList, westCaptures, wPawn, 9);
 	U64 eastCaptures = wPawnsCaptureEast(bb[wPawn], bb[Blacks]);
 	getMovesFromPawnCaptureBB(moveList, eastCaptures, wPawn, 7);
 	
-	wPawnsPromotion();
 	wPawnsEnPassant();
 }
 
@@ -138,16 +143,15 @@ void Board::getBlackPawnMoves(MoveList& moveList)
 {
 	U64 empty = getEmpty();
 	U64 push = bPawnsPush(bPawnsCanPush(bb[bPawn], empty), empty);
-	getMovesFromPushBB(moveList, push, bPawn, 0, -8);
+	getMovesFromPushBB(moveList, push, bPawn, -8);
 
 	U64 doublePush = bPawnsDoublePush(bPawnsCanDoublePush(bb[bPawn], empty), empty);
-	getMovesFromPushBB(moveList, doublePush, bPawn, DOUBLE_PUSH, -16);
+	getMovesFromPushBB(moveList, doublePush, bPawn, -16);
 
 	U64 westCaptures = bPawnsCaptureWest(bb[bPawn], bb[Whites]);
 	getMovesFromPawnCaptureBB(moveList, westCaptures, bPawn, -7);
 	U64 eastCaptures = bPawnsCaptureEast(bb[bPawn], bb[Whites]);
 	getMovesFromPawnCaptureBB(moveList, eastCaptures, bPawn, -9);
 
-	bPawnsPromotion();
 	bPawnsEnPassant();
 }

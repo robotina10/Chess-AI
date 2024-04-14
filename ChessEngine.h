@@ -8,5 +8,5 @@ public:
     Board board;
     MoveList moveList;
     MoveList gameMoveList;
-    ChessEngine() : moveList(218), gameMoveList(512) { board.setBoard(); board.getMoves(moveList); }
+    ChessEngine() : moveList(218), gameMoveList(512) { board.setBoard(); board.initAttackArr(); board.generateLegalMoves(moveList);}
 };

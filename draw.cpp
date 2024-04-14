@@ -1,6 +1,6 @@
 #include "draw.h"
 
-void drawPieces(sf::RenderWindow& window, Board &board)
+void drawPieces(sf::RenderWindow& window, Board &board, int white)
 {
 	for (int pieceIndex = 0; pieceIndex < pieceTypes.size(); pieceIndex++) {
 		U64 bitboard = board.getBitboard(pieceIndex);
@@ -13,7 +13,16 @@ void drawPieces(sf::RenderWindow& window, Board &board)
 				}
 				texture.setSmooth(true);
 				sf::Sprite piece(texture);
-				piece.setPosition(sf::Vector2f(SIDE * (i % 8) + SIDE / 10, SIDE * (i / 8) + SIDE / 10));
+
+				int x = SIDE * (7 - i % 8) + SIDE / 10;
+				int y = SIDE * (7 - i / 8) + SIDE / 10;
+
+				if (white) {
+				    x = SIDE * (i % 8) + SIDE / 10;
+				    y = SIDE * (i / 8) + SIDE / 10;
+
+				}
+				piece.setPosition(sf::Vector2f(x, y));
 				piece.setScale(sf::Vector2f(1.3f, 1.3f));
 				window.draw(piece);
 			}
@@ -24,8 +33,8 @@ void drawPieces(sf::RenderWindow& window, Board &board)
 void drawBoard(sf::RenderWindow &window)
 {
 	sf::RectangleShape rect(sf::Vector2f(SIDE, SIDE));
-	for (int i = 0; i <= ROWS; i++) {
-		for (int j = 0; j <= COLS; j++) {
+	for (int i = 0; i < ROWS; i++) {
+		for (int j = 0; j < COLS; j++) {
 			rect.setPosition(i * SIDE, j * SIDE);
 			if ((i + j) % 2 == 0) {
 				rect.setFillColor(WHITE);
@@ -71,6 +80,24 @@ void drawPossibleMoves(sf::RenderWindow& window, MoveList &moveList, int from)
 	}
 }
 
+void drawRanksFiles(sf::RenderWindow& window)
+{
+	/*sf::Font font;
+	if (!font.loadFromFile("arial.ttf"))
+	{
+		std::cout << "Failed to load font!\n";
+	}
+	sf::Text text;
+	for (int i = 1; i <= 8; i++) {
+		text.setFont(font);
+		text.setString("1");
+		text.setCharacterSize(8);
+		text.setFillColor(sf::Color::Black);
+		text.setPosition(SIDE * i - 10, WIN_HEIGHT - 10);
+		window.draw(text);
+	}*/
+}
+
 void dragPiece(sf::RenderWindow& window, Board& board, sf::Vector2i pos, int squarePos, Pieces pieceType)
 {
 	sf::Texture texture;
@@ -85,12 +112,13 @@ void dragPiece(sf::RenderWindow& window, Board& board, sf::Vector2i pos, int squ
 	window.draw(piece);
 }
 
-void draw(sf::RenderWindow &window, ChessEngine &chess, int from)
+void draw(sf::RenderWindow &window, ChessEngine &chess, int from, int white)
 {
 	window.clear();
 	drawBoard(window);
 	highlightSquare(window, chess.board, from);
 	drawPossibleMoves(window, chess.moveList, from);
-	drawPieces(window, chess.board);
+	drawPieces(window, chess.board, white);
+	drawRanksFiles(window);
 	window.display();
 }
