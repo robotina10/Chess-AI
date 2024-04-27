@@ -4,17 +4,16 @@
 const U64 rank8 = 0xff00000000000000;
 const U64 rank1 = 0xff;
 
-/*U64 wPawnAttacks[64];
-U64 bPawnAttacks[64];
+U64 pawnAttacks[2][64];
 
-void preCalculatePawnAttacks()
+void initPawnAttacks()
 {
 	for (int i = 0; i < 64; i++) {
 		U64 pawn = 1ULL << i;
-		wPawnAttacks[i] = noWeOne(pawn) | noEaOne(pawn);
-		bPawnAttacks[i] = soWeOne(pawn) | soEaOne(pawn);
+		pawnAttacks[1][i] = noWeOne(pawn) | noEaOne(pawn);
+		pawnAttacks[0][i] = soWeOne(pawn) | soEaOne(pawn);
 	}
-}*/
+}
 
 U64 wPawnsPush(U64 wp, U64 empty)
 {
@@ -114,7 +113,6 @@ void Board::getMovesFromPawnCaptureBB(MoveList& moveList, U64 bb, Pieces piece, 
 		Pieces capturedPiece = getPiece(to);
 		if (isPromotion(to)) {
 			moveList.moves[moveList.count++] = Move(to + captureDistance, to, piece, capturedPiece, GENERIC_PROM);
-
 		}
 		else
 			moveList.moves[moveList.count++] = Move(to + captureDistance, to, piece, capturedPiece, NONE);

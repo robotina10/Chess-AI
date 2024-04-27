@@ -3,19 +3,28 @@
 #include "ChessEngine.h"
 #include "draw.h"
 #include "game.h"
+#include "perft.h"
 
 int main()
 {   
     sf::RenderWindow window(sf::VideoMode(WIN_WIDTH, WIN_HEIGHT), "Chess", sf::Style::Close);
-    window.setFramerateLimit(30);
+    window.setFramerateLimit(60);
 
     ChessEngine chess;
 
-    int white = 1; //1 white 0 black
+    bool whiteView = true;
     bool isPressed = false;
     bool mouseMoved = false;
     int from  = -1;
     Pieces selectedPiece = EMPTY;
+
+    std::cout << Perft(chess.board, 3) << "\n";
+
+    if (0) {
+        chess.board.setWhiteTurn(0);
+        whiteView = false;
+    }
+    chess.board.generateLegalMoves(chess.moveList);
 
     while (window.isOpen()) 
     {
@@ -30,11 +39,11 @@ int main()
             {
                 isPressed = true;
                 if (from == -1) {
-                    from = calcSquarePos(sf::Mouse::getPosition(window));
+                    from = calcSquarePos(sf::Mouse::getPosition(window), whiteView);
                     selectedPiece = chess.board.getPiece(from);
                     continue;
                 }
-                int to = calcSquarePos(sf::Mouse::getPosition(window));
+                int to = calcSquarePos(sf::Mouse::getPosition(window), whiteView);
                 int i = getMoveIndex(chess.moveList, from, to);
                 if (i == -1) {
                     from = to;
@@ -42,7 +51,6 @@ int main()
                 else {
                     int promotion = NONE;
                     if (chess.moveList.moves[i].isPromotion()) {
-                        std::cin >> promotion;
                     }
                     makeMove(window, chess, from, to, selectedPiece, i, (SpecialMove)promotion);
                 }
@@ -58,11 +66,11 @@ int main()
                     continue;
                 mouseMoved = true;
                 sf::Vector2i pos = sf::Mouse::getPosition(window);
-                dragPiece(window, chess.board, pos, calcSquarePos(pos), selectedPiece);
+                dragPiece(window, chess.board, pos, calcSquarePos(pos, whiteView), selectedPiece);
                 break;
             }
         }
-        draw(window, chess, from, white);
+        draw(window, chess, from, whiteView);
     }
     return 0;
 }

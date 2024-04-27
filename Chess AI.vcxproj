@@ -143,9 +143,12 @@
     <ClInclude Include="ChessEngine.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="draw.h" />
+    <ClInclude Include="kingMoves.h" />
     <ClInclude Include="knightMoves.h" />
     <ClInclude Include="move.h" />
     <ClInclude Include="pawnMoves.h" />
+    <ClInclude Include="perft.h" />
+    <ClInclude Include="slidingPieceMoves.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

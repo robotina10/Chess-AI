@@ -56,5 +56,14 @@
     <ClInclude Include="knightMoves.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="kingMoves.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="slidingPieceMoves.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="perft.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

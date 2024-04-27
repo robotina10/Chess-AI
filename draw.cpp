@@ -1,6 +1,6 @@
 #include "draw.h"
 
-void drawPieces(sf::RenderWindow& window, Board &board, int white)
+void drawPieces(sf::RenderWindow& window, Board &board, bool whiteView)
 {
 	for (int pieceIndex = 0; pieceIndex < pieceTypes.size(); pieceIndex++) {
 		U64 bitboard = board.getBitboard(pieceIndex);
@@ -17,7 +17,7 @@ void drawPieces(sf::RenderWindow& window, Board &board, int white)
 				int x = SIDE * (7 - i % 8) + SIDE / 10;
 				int y = SIDE * (7 - i / 8) + SIDE / 10;
 
-				if (white) {
+				if (whiteView) {
 				    x = SIDE * (i % 8) + SIDE / 10;
 				    y = SIDE * (i / 8) + SIDE / 10;
 
@@ -47,14 +47,17 @@ void drawBoard(sf::RenderWindow &window)
 	}
 }
 
-void highlightSquare(sf::RenderWindow& window, Board& board, int squarePos)
+void highlightSquare(sf::RenderWindow& window, Board& board, int squarePos, bool whiteView)
 {
 	if (squarePos == -1)
 		return;
 	sf::RectangleShape rect(sf::Vector2f(SIDE, SIDE));
+	if (!whiteView)
+		squarePos = 63 - squarePos;
 	int y = (squarePos / 8);
 	int x = (squarePos % 8);
 	rect.setPosition(x * SIDE, y * SIDE);
+
 	if ((x + y) % 2 == 0)
 		rect.setFillColor(HIGHLIGHTED_WHITE);
 	else 
@@ -62,15 +65,19 @@ void highlightSquare(sf::RenderWindow& window, Board& board, int squarePos)
 	window.draw(rect);
 }
 
-void drawPossibleMoves(sf::RenderWindow& window, MoveList &moveList, int from)
+void drawPossibleMoves(sf::RenderWindow& window, MoveList &moveList, int from, bool whiteView)
 {
 	sf::RectangleShape rect(sf::Vector2f(SIDE, SIDE));
 	for (int i = 0; i < moveList.count; i++) {
 		if (moveList.moves[i].getFrom() == from) {
-			int y = moveList.moves[i].getTo() / 8;
-			int x = moveList.moves[i].getTo() % 8;
-			rect.setPosition(x * SIDE, y * SIDE);
+			int to = moveList.moves[i].getTo();
+			if (!whiteView) {
+				to = 63 - moveList.moves[i].getTo();
+			}
+			int y = to / 8;
+			int x = to % 8;
 			rect.setFillColor(sf::Color::Red);
+			rect.setPosition(x * SIDE, y * SIDE);
 			/*if ((move.getFrom() + move.getTo()) % 2 == 0)
 				rect.setFillColor(HIGHLIGHTED_WHITE);
 			else
@@ -112,13 +119,13 @@ void dragPiece(sf::RenderWindow& window, Board& board, sf::Vector2i pos, int squ
 	window.draw(piece);
 }
 
-void draw(sf::RenderWindow &window, ChessEngine &chess, int from, int white)
+void draw(sf::RenderWindow &window, ChessEngine &chess, int from, bool whiteView)
 {
 	window.clear();
 	drawBoard(window);
-	highlightSquare(window, chess.board, from);
-	drawPossibleMoves(window, chess.moveList, from);
-	drawPieces(window, chess.board, white);
+	highlightSquare(window, chess.board, from, whiteView);
+	drawPossibleMoves(window, chess.moveList, from, whiteView);
+	drawPieces(window, chess.board, whiteView);
 	drawRanksFiles(window);
 	window.display();
 }

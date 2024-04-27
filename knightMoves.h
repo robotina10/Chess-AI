@@ -3,9 +3,9 @@
 
 U64 knightAttacks[64];
 
-const U64 notABFile = 0x0;
-const U64 notGHFile = 0x0;
-const U64 notAFFile = 0x0;
+const U64 notABFile = ~0x0303030303030303;
+const U64 notGHFile = ~0xc0c0c0c0c0c0c0c0;
+const U64 notAFFile = ~0x8181818181818181;
 
 U64 noNoEa(U64 b) { return (b << 17) & notAFile; }
 U64 noEaEa(U64 b) { return (b << 10) & notABFile; }
@@ -19,30 +19,25 @@ U64 soSoWe(U64 b) { return (b >> 17) & notHFile; }
 void initKnightAttacks()
 {
 	for (int i = 0; i < 64; i++) {
-		U64 bb = (1ULL << i);
-		U64 attack = noNoEa(bb) | noEaEa(bb) | soEaEa(bb) | soSoEa(bb) | noNoWe(bb) | noWeWe(bb) | soWeWe(bb) | soSoWe(bb);
-		knightAttacks[i] = attack;
+		U64 knight = (1ULL << i);
+		knightAttacks[i] = noNoEa(knight) | noEaEa(knight) | soEaEa(knight) | soSoEa(knight) | noNoWe(knight) | noWeWe(knight) | soWeWe(knight) | soSoWe(knight);
 	}
 }
 
 void Board::getKnightMoves(Pieces knight, MoveList &moveList)
 {
-	U64 knights = bb[knight];
-	U64 enemy = bb[(knight == wKnight) ? Blacks : Whites];
+	U64 knights = bb[knight];  
 
 	while (knights) {
 		int from = bitScanForwardWithReset(knights);
-		U64 attack = knightAttacks[from];
+		U64 attack = knightAttacks[from] & (getEmpty() | getEnemy(knight));
 		while (attack) {
 			int to = bitScanForwardWithReset(attack);
-			Pieces capturedPiece = EMPTY;
-
-			if ((1ULL << to) & getEmpty()) {
-				moveList.moves[moveList.count++] = Move(from, to, knight, EMPTY, NONE);
+			if ((1ULL << to) & occupied) {
+				moveList.moves[moveList.count++] = Move(from, to, knight, getPiece(to), NONE);
 			}
-			else if ((1ULL << to) & enemy) {
-				capturedPiece = getPiece(to);
-				moveList.moves[moveList.count++] = Move(from, to, knight, capturedPiece, NONE);
+			else {
+				moveList.moves[moveList.count++] = Move(from, to, knight, EMPTY, NONE);
 			}
 		}
 	}

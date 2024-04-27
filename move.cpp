@@ -71,10 +71,10 @@ void Move::setPromotion(int promotionPiece)
 
 void Move::printMove()
 {
-	std::cout << getFrom();
-	std::cout << getTo();
-	std::cout << getPiece();
-	std::cout << getCapturedPiece();
-	std::cout << isCapture();
-	std::cout << getPromotion();
+	std::cout << "from:" << getFrom() << "\n";
+	std::cout << "to: " << getTo() << "\n";
+	std::cout << "piece: " << getPiece() << "\n";
+	std::cout << "capturedPiece: " << getCapturedPiece() << "\n";
+	std::cout << "isCapture: " << isCapture() << "\n";
+	//std::cout << getPromotion() << "\n";
 }

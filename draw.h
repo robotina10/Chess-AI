@@ -14,5 +14,5 @@ const sf::Color HIGHLIGHTED_BLACK(178, 178, 178);
 
 const std::vector<std::string> pieceTypes = { "wk", "wq", "wr", "wb", "wn", "wp","bk", "bq", "br", "bb", "bn", "bp" };
 
-void draw(sf::RenderWindow& window, ChessEngine& chess, int from, int white);
+void draw(sf::RenderWindow& window, ChessEngine& chess, int from, bool whiteView);
 void dragPiece(sf::RenderWindow& window, Board& board, sf::Vector2i pos, int squarePos, Pieces pieceType);

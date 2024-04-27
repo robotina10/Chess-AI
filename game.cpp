@@ -1,6 +1,6 @@
 #include "game.h"
 
-int calcSquarePos(sf::Vector2i p)
+int calcSquarePos(sf::Vector2i p, bool whiteTurn)
 {
     p.x /= SIDE;
     p.y /= SIDE;
@@ -12,7 +12,9 @@ int calcSquarePos(sf::Vector2i p)
         p.x = 0;
     if (p.y < 0)
         p.y = 0;
-    return p.x + p.y * 8;
+    if (whiteTurn)
+        return p.x + p.y * 8;
+    return 63 - (p.x + p.y * 8);
 }
 
 int getMoveIndex(MoveList& moveList, int from, int to)
