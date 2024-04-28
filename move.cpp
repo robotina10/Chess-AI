@@ -37,17 +37,12 @@ int Move::getCaptureColor()
 	return (getCapturedPiece() < 6) ? 12 : 13;
 }
 
-int Move::getEnPassant()
-{
-	return (move >> 20) & EN_PASSANT;
-}
-
 int Move::getPromotion()
 {
-	return (move >> 20) & 0xf;
+	return ((move >> 20) & 0xf) == GENERIC_PROM;
 }
 
-int Move::getCastling()
+int Move::getSpecialMove()
 {
 	return (move >> 20) & 0xf;
 }
@@ -62,7 +57,7 @@ bool Move::isPromotion()
 	return ((move >> 20) & 0xf) == GENERIC_PROM;
 }
 
-void Move::setPromotion(int promotionPiece)
+void Move::setPromotion(int promotionPiece) // can be done maybe better
 {
 	move &= ~(0xfff << 20);
 	move |= (promotionPiece & 0xf) << 20;
@@ -71,10 +66,5 @@ void Move::setPromotion(int promotionPiece)
 
 void Move::printMove()
 {
-	std::cout << "from:" << getFrom() << "\n";
-	std::cout << "to: " << getTo() << "\n";
-	std::cout << "piece: " << getPiece() << "\n";
-	std::cout << "capturedPiece: " << getCapturedPiece() << "\n";
-	std::cout << "isCapture: " << isCapture() << "\n";
-	//std::cout << getPromotion() << "\n";
+	std::cout << "from:" << (getSpecialMove() & KING_CASTLING) << "\n";
 }

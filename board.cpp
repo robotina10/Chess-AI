@@ -41,13 +41,45 @@ bool Board::attacked(int to, bool side)
 {
 	if (!side) {
 		if (knightAttacks[to] & bb[wKnight]) return true;
-		if (pawnAttacks[~side][to] & bb[wPawn]) return true;
-		if () return true;
-		if () return true;
+		if (pawnAttacks[0][to] & bb[wPawn]) return true;
+		U64 queenRook = bb[wQueen] | bb[wRook];
+		if (rookAttack(to, occupied) & queenRook) return true;
+		U64 queenBishop = bb[wBishop] | bb[wQueen];
+		if (bishopAttack(to, occupied) & queenBishop) return true;
 	}
 	else {
-
+		if (knightAttacks[to] & bb[bKnight]) return true;
+		if (pawnAttacks[1][to] & bb[bPawn]) return true;
+		U64 queenRook = bb[bQueen] | bb[bRook];
+		if (rookAttack(to, occupied) & queenRook) return true;
+		U64 queenBishop = bb[bBishop] | bb[bQueen];
+		if (bishopAttack(to, occupied) & queenBishop) return true;
 	}
+}
+
+bool Board::inCheck(int to, bool side)
+{
+	int king = wKing;
+	if (!side)
+		king = bKing;
+	occupied ^= bb[king];
+	bool check = attacked(to, side);
+	occupied ^= bb[king];
+	return check;
+}
+
+bool Board::inCheck(Move move, bool side)
+{
+	makeMove(move);
+	int king = wKing;
+	if (!side) 
+		king = bKing;
+	int to = bitScanForward(bb[king]);
+	occupied ^= bb[king];
+	bool check = attacked(to, side);
+	occupied ^= bb[king];
+	unMakeMove(move);
+	return check;
 }
 
 int Board::generateLegalMoves(MoveList& moveList)
@@ -85,6 +117,30 @@ void Board::makeMove(Move move)
 	}
 	else
 		occupied ^= fromTo;
+
+	switch (move.getSpecialMove()) {
+	case KING_CASTLING:
+		from <<= 3;
+		to >>= 1;
+		fromTo = from | to;
+		bb[(move.getPiece() < 6) ? wRook : bRook] ^= fromTo;
+		bb[move.getPieceColor()] ^= fromTo;
+		occupied ^= fromTo;
+		break;
+	case QUEEN_CASTLING:
+		from >>= 4;
+		to <<= 1;
+		fromTo = from | to;
+		bb[(move.getPiece() < 6) ? wRook : bRook] ^= fromTo;
+		bb[move.getPieceColor()] ^= fromTo;
+		occupied ^= fromTo;
+		break;
+	case EN_PASSANT:
+		break;
+	case GENERIC_PROM:
+		break;
+	}
+
 	changeTurn();
 
 }
@@ -109,14 +165,16 @@ U64 Board::getBitboard(Pieces index) { return bb[index]; }
 U64 Board::getEnemy(Pieces piece) { return bb[(piece < 6) ? Blacks : Whites]; }
 bool Board::isWhiteTurn() { return whiteTurn; }
 bool Board::isEmpty(Pieces piece) { return piece == EMPTY; }
-int Board::getCastlingRights() { return castlingRights; }
+
 int Board::getEnPassantSquare() { return enPassantSquare; }
+int Board::getCastlingRight(CastlingRights right) { return castlingRights & right; }
+
 
 void Board::setWhiteTurn(bool turn) { whiteTurn = turn; }
 void Board::changeTurn() { whiteTurn = !whiteTurn; }
 void Board::setEnPassantSquare(int shift) { enPassantSquare <= shift; }
-void Board::setCastlingRights(CastlingRights right) { castlingRights += right; } // better way by setting invidual bits
-void Board::removeCastlingRights(CastlingRights right) { castlingRights -= right; }
+void Board::setCastlingRight(CastlingRights right) { castlingRights ^= right; }
+
 
 Pieces Board::getPiece(int pos)
 {
@@ -209,7 +267,6 @@ void Board::setBoard(std::string FEN)
 		}
 		file++;
 	}
-	return;
 	for (char c: std::string(FEN.begin() + i, FEN.end())) {
 		if (c == 'w') {
 			setWhiteTurn(true);
@@ -218,16 +275,16 @@ void Board::setBoard(std::string FEN)
 			setWhiteTurn(false);
 		}
 		else if (c == 'k') {
-			setCastlingRights(bKingSide);
+			setCastlingRight(bKingSide);
 		}
 		else if (c == 'K') {
-			setCastlingRights(wKingSide);
+			setCastlingRight(wKingSide);
 		}
 		else if (c == 'Q') {
-			setCastlingRights(bQueenSide);
+			setCastlingRight(wQueenSide);
 		}
 		else if (c == 'q') {
-			setCastlingRights(wQueenSide);
+			setCastlingRight(bQueenSide);
 		}
 		else if (isalpha(c) && isdigit(++c)) {
 			c--;

@@ -72,34 +72,34 @@ U64 antiDiagAttacks(U64 occ, int pos)
 	return forward &= antiDiagMask[pos];
 }
 
-U64 rookAttack(int from, U64 occupied, U64 enemy, U64 empty)
+U64 rookAttack(int from, U64 occupied)
 {
-	U64 attack = lineAttacks(occupied, from) | fileAttacks(occupied, from);
-	attack &= empty | enemy;
+	return lineAttacks(occupied, from) | fileAttacks(occupied, from);
 }
-//https://cpu.land/slice-dat-time
-//https://www.chessprogramming.org/Square_Attacked_By
-//https://core.ac.uk/download/572627675.pdf
-//https://www.chessprogramming.org/X-ray_Attacks_(Bitboards)
-//https://www.chessprogramming.org/Checks_and_Pinned_Pieces_(Bitboards)
-//https://www.chessprogramming.org/DirGolem
 
+U64 bishopAttack(int from, U64 occupied)
+{
+	return diagonalAttacks(occupied, from) | antiDiagAttacks(occupied, from);
+}
 
 void Board::getRookMoves(Pieces rook, MoveList& moveList)
 {
 	U64 rooks = bb[rook];
 	while (rooks) {
 		int from = bitScanForwardWithReset(rooks);
-		U64 attack = lineAttacks(occupied, from) | fileAttacks(occupied, from);
-		attack &= (getEnemy(rook) | getEmpty());
+		U64 attack = rookAttack(from, occupied);
+		attack &= getEnemy(rook) | getEmpty();
 		while (attack) {
 			int to = bitScanForwardWithReset(attack);
-			if ((1ULL << to) & occupied) {
-				moveList.moves[moveList.count++] = Move(from, to, rook, getPiece(to), NONE);
+			Move move;
+			if ((1ULL << to) & occupied)
+				move = { from, to, rook, getPiece(to), NONE };
+			else
+				move = { from, to, rook, EMPTY, NONE };
+			if (inCheck(move, whiteTurn)) {
+				continue;
 			}
-			else {
-				moveList.moves[moveList.count++] = Move(from, to, rook, EMPTY, NONE);
-			}
+			moveList.moves[moveList.count++] = move;
 		}
 	}
 }
@@ -109,16 +109,19 @@ void Board::getBishopMoves(Pieces bishop, MoveList& moveList)
 	U64 bishops = bb[bishop];
 	while (bishops) {
 		int from = bitScanForwardWithReset(bishops);
-		U64 attack = diagonalAttacks(occupied, from) | antiDiagAttacks(occupied, from);
-		attack &= (getEnemy(bishop) | getEmpty());
+		U64 attack = bishopAttack(from, occupied);
+		attack &= getEnemy(bishop) | getEmpty();
 		while (attack) {
 			int to = bitScanForwardWithReset(attack);
-			if ((1ULL << to) & occupied) {
-				moveList.moves[moveList.count++] = Move(from, to, bishop, getPiece(to), NONE);
+			Move move;
+			if ((1ULL << to) & occupied)
+				move = { from, to, bishop, getPiece(to), NONE };
+			else
+				move = { from, to, bishop, EMPTY, NONE };
+			if (inCheck(move, whiteTurn)) {
+				continue;
 			}
-			else {
-				moveList.moves[moveList.count++] = Move(from, to, bishop, EMPTY, NONE);
-			}
+			moveList.moves[moveList.count++] = move;
 		}
 	}
 }
@@ -128,16 +131,19 @@ void Board::getQueenMoves(Pieces queen, MoveList& moveList)
 	U64 queens = bb[queen];
 	while (queens) {
 		int from = bitScanForwardWithReset(queens);
-		U64 attack = diagonalAttacks(occupied, from) | antiDiagAttacks(occupied, from) | lineAttacks(occupied, from) | fileAttacks(occupied, from);
-		attack &= (getEnemy(queen) | getEmpty());
+		U64 attack = rookAttack(from, occupied) | bishopAttack(from, occupied);
+		attack &= getEnemy(queen) | getEmpty();
 		while (attack) {
 			int to = bitScanForwardWithReset(attack);
-			if ((1ULL << to) & occupied) {
-				moveList.moves[moveList.count++] = Move(from, to, queen, getPiece(to), NONE);
+			Move move;
+			if ((1ULL << to) & occupied)
+				move = { from, to, queen, getPiece(to), NONE };
+			else
+				move = { from, to, queen, EMPTY, NONE };
+			if (inCheck(move, whiteTurn)) {
+				continue;
 			}
-			else {
-				moveList.moves[moveList.count++] = Move(from, to, queen, EMPTY, NONE);
-			}
+			moveList.moves[moveList.count++] = move;
 		}
 	}
 }

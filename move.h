@@ -15,9 +15,8 @@ public:
 	int getPieceColor();
 	int getCapturedPiece();
 	int getCaptureColor();
-	int getEnPassant();
 	int getPromotion();
-	int getCastling();
+	int getSpecialMove();
 	bool isCapture();
 	bool isPromotion();
 	void setPromotion(int promotionPiece);

@@ -18,8 +18,9 @@ int main()
     int from  = -1;
     Pieces selectedPiece = EMPTY;
 
-    std::cout << Perft(chess.board, 3) << "\n";
-
+    //std::cout << Perft(chess.board, 4) << "\n";
+    //https://core.ac.uk/download/572627675.pdf
+    //https://cpu.land/slice-dat-time
     if (0) {
         chess.board.setWhiteTurn(0);
         whiteView = false;

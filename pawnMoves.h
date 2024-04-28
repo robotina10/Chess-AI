@@ -81,6 +81,7 @@ U64 bPawnsCaptureEast(U64 bp, U64 enemy)
 
 U64 wPawnsEnPassant()
 {
+
 	return 0;
 }
 
@@ -94,15 +95,19 @@ bool isPromotion(int to)
 	return (to > 55 || to < 8) ? true : false;
 }
 
-void getMovesFromPushBB(MoveList& moveList, U64 bb, Pieces piece, int pushDistance)
+void Board::getMovesFromPushBB(MoveList& moveList, U64 bb, Pieces piece, int pushDistance)
 {
 	while (bb) {
 		int to = bitScanForwardWithReset(bb);
-		if (isPromotion(to)) {
-			moveList.moves[moveList.count++] = Move(to + pushDistance, to, piece, EMPTY, GENERIC_PROM);
-		}
+		Move move;
+		if (isPromotion(to))
+			move = { to + pushDistance, to, piece, EMPTY, GENERIC_PROM };
 		else
-			moveList.moves[moveList.count++] = Move(to + pushDistance, to, piece, EMPTY, NONE);
+			move = { to + pushDistance, to, piece, EMPTY, NONE };
+		if (inCheck(move, whiteTurn)) {
+			continue;
+		}
+		moveList.moves[moveList.count++] = move;
 	}
 }
 
@@ -110,12 +115,17 @@ void Board::getMovesFromPawnCaptureBB(MoveList& moveList, U64 bb, Pieces piece, 
 {
 	while (bb) {
 		int to = bitScanForwardWithReset(bb);
+		Move move;
 		Pieces capturedPiece = getPiece(to);
 		if (isPromotion(to)) {
-			moveList.moves[moveList.count++] = Move(to + captureDistance, to, piece, capturedPiece, GENERIC_PROM);
+			move = { to + captureDistance, to, piece, capturedPiece, GENERIC_PROM };
 		}
 		else
-			moveList.moves[moveList.count++] = Move(to + captureDistance, to, piece, capturedPiece, NONE);
+			move = { to + captureDistance, to, piece, capturedPiece, NONE };
+		if (inCheck(move, whiteTurn)) {
+			continue;
+		}
+		moveList.moves[moveList.count++] = move;
 	}
 }
 
