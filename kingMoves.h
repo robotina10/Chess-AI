@@ -20,19 +20,19 @@ void Board::getCastlingMoves(Pieces king, MoveList& moveList)
 		if (king == wKing) {
 			if (getCastlingRight(wKingSide)) {
 				if (!(attacked(60, whiteTurn) || attacked(61, whiteTurn) || attacked(62, whiteTurn)))
-					if (!(occupied & 0x0ff0000000000000))
+					if (!(occupied & 0x0600000000000000))
 						moveList.moves[moveList.count++] = Move(60, 62, king, EMPTY, KING_CASTLING);
 			}
 			if (getCastlingRight(wQueenSide)) {
 				if (!(attacked(60, whiteTurn) || attacked(59, whiteTurn) || attacked(58, whiteTurn) || attacked(57, whiteTurn)))
-					if (!(occupied & 0x0000000000000000))
+					if (!(occupied & 0x0e00000000000000))
 						moveList.moves[moveList.count++] = Move(60, 57, king, EMPTY, QUEEN_CASTLING);
 			}
 		}
 		else {
 			if (getCastlingRight(bKingSide)) {
 				if (!(attacked(4, whiteTurn) || attacked(5, whiteTurn) || attacked(6, whiteTurn)))
-					if (!(occupied & 0xc0))
+					if (!(occupied & 0x60))
 						moveList.moves[moveList.count++] = Move(4, 6, king, EMPTY, KING_CASTLING);
 			}
 			if (getCastlingRight(bQueenSide)) {
@@ -44,7 +44,7 @@ void Board::getCastlingMoves(Pieces king, MoveList& moveList)
 	}
 }
 
-void Board::getKingMoves(Pieces king, MoveList& moveList)
+void Board::getKingMoves(Pieces king, MoveList& moveList, U64 check)
 {
 	if (bb[king]) {
 		int from = bitScanForward(bb[king]);

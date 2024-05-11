@@ -24,7 +24,7 @@ void initKnightAttacks()
 	}
 }
 
-void Board::getKnightMoves(Pieces knight, MoveList &moveList)
+void Board::getKnightMoves(Pieces knight, MoveList &moveList, U64 check)
 {
 	U64 knights = bb[knight];  
 

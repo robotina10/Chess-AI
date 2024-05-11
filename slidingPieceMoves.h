@@ -82,7 +82,7 @@ U64 bishopAttack(int from, U64 occupied)
 	return diagonalAttacks(occupied, from) | antiDiagAttacks(occupied, from);
 }
 
-void Board::getRookMoves(Pieces rook, MoveList& moveList)
+void Board::getRookMoves(Pieces rook, MoveList& moveList, U64 check)
 {
 	U64 rooks = bb[rook];
 	while (rooks) {
@@ -104,7 +104,7 @@ void Board::getRookMoves(Pieces rook, MoveList& moveList)
 	}
 }
 
-void Board::getBishopMoves(Pieces bishop, MoveList& moveList)
+void Board::getBishopMoves(Pieces bishop, MoveList& moveList, U64 check)
 {
 	U64 bishops = bb[bishop];
 	while (bishops) {
@@ -126,7 +126,7 @@ void Board::getBishopMoves(Pieces bishop, MoveList& moveList)
 	}
 }
 
-void Board::getQueenMoves(Pieces queen, MoveList& moveList)
+void Board::getQueenMoves(Pieces queen, MoveList& moveList, U64 check)
 {
 	U64 queens = bb[queen];
 	while (queens) {

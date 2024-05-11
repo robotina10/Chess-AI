@@ -57,6 +57,27 @@ bool Board::attacked(int to, bool side)
 	}
 }
 
+U64 Board::attacksToKing(int to, bool side)
+{
+	if (!side) {
+
+		U64 queenRook = bb[wQueen] | bb[wRook];
+		U64 queenBishop = bb[wBishop] | bb[wQueen];
+		return knightAttacks[to] & bb[wKnight] 
+			| pawnAttacks[0][to] & bb[wPawn] 
+			| rookAttack(to, occupied) & queenRook 
+			| bishopAttack(to, occupied) & queenBishop;
+	}
+	else {
+		U64 queenRook = bb[bQueen] | bb[bRook];
+		U64 queenBishop = bb[bBishop] | bb[bQueen];
+		return knightAttacks[to] & bb[bKnight]
+			| pawnAttacks[1][to] & bb[bPawn]
+			| rookAttack(to, occupied) & queenRook
+			| bishopAttack(to, occupied) & queenBishop;
+	}
+}
+
 bool Board::inCheck(int to, bool side)
 {
 	int king = wKing;
@@ -70,6 +91,7 @@ bool Board::inCheck(int to, bool side)
 
 bool Board::inCheck(Move move, bool side)
 {
+	int ep = enPassantSquare;
 	makeMove(move);
 	int king = wKing;
 	if (!side) 
@@ -79,36 +101,40 @@ bool Board::inCheck(Move move, bool side)
 	bool check = attacked(to, side);
 	occupied ^= bb[king];
 	unMakeMove(move);
+	enPassantSquare = ep;
 	return check;
 }
 
 int Board::generateLegalMoves(MoveList& moveList)
 {
 	if (whiteTurn) {
-		getWhitePawnMoves(moveList);
-		getKnightMoves(wKnight, moveList);
-		getKingMoves(wKing, moveList);
-		getRookMoves(wRook, moveList);
-		getBishopMoves(wBishop, moveList);
-		getQueenMoves(wQueen, moveList);
+		U64 check = attacksToKing(bitScanForward(bb[wKing]), whiteTurn);
+		getWhitePawnMoves(moveList, check);
+		getKnightMoves(wKnight, moveList, check);
+		getKingMoves(wKing, moveList, check);
+		getRookMoves(wRook, moveList, check);
+		getBishopMoves(wBishop, moveList, check);
+		getQueenMoves(wQueen, moveList, check);
 	}
 	else {
-		getBlackPawnMoves(moveList);
-		getKnightMoves(bKnight, moveList);
-		getKingMoves(bKing, moveList);
-		getRookMoves(bRook, moveList);
-		getBishopMoves(bBishop, moveList);
-		getQueenMoves(bQueen, moveList);
+		U64 check = attacksToKing(bitScanForward(bb[bKing]), whiteTurn);
+		getBlackPawnMoves(moveList, check);
+		getKnightMoves(bKnight, moveList, check);
+		getKingMoves(bKing, moveList, check);
+		getRookMoves(bRook, moveList, check);
+		getBishopMoves(bBishop, moveList, check);
+		getQueenMoves(bQueen, moveList, check);
 	}
 	return moveList.count;
 }
 
 void Board::makeMove(Move move)
 {
+	int piece = move.getPiece();
 	U64 from = 1ULL << move.getFrom();
 	U64 to = 1ULL << move.getTo();
 	U64 fromTo = from | to;
-	bb[move.getPiece()] ^= fromTo;
+	bb[piece] ^= fromTo;
 	bb[move.getPieceColor()] ^= fromTo;
 	if (move.isCapture()) {
 		bb[move.getCapturedPiece()] ^= to;
@@ -118,12 +144,38 @@ void Board::makeMove(Move move)
 	else
 		occupied ^= fromTo;
 
+	switch (piece) {
+	case wKing:
+		setCastlingRight(wKingSide);
+		setCastlingRight(wQueenSide);
+		break;
+	case bKing:
+		setCastlingRight(bKingSide);
+		setCastlingRight(bQueenSide);
+		break;
+	case wRook:
+		if (move.getFrom() == 56)
+			setCastlingRight(wQueenSide);
+		else if (move.getFrom() == 63)
+			setCastlingRight(wKingSide);
+		break;
+	case bRook:
+		if (move.getFrom() == 0)
+			setCastlingRight(bQueenSide);
+		else if (move.getFrom() == 7)
+			setCastlingRight(bKingSide);
+		break;
+	}
+
 	switch (move.getSpecialMove()) {
+	case DOUBLE_PUSH:
+		enPassantSquare = move.getTo();
+		break;
 	case KING_CASTLING:
 		from <<= 3;
 		to >>= 1;
 		fromTo = from | to;
-		bb[(move.getPiece() < 6) ? wRook : bRook] ^= fromTo;
+		bb[(piece < 6) ? wRook : bRook] ^= fromTo;
 		bb[move.getPieceColor()] ^= fromTo;
 		occupied ^= fromTo;
 		break;
@@ -131,23 +183,110 @@ void Board::makeMove(Move move)
 		from >>= 4;
 		to <<= 1;
 		fromTo = from | to;
-		bb[(move.getPiece() < 6) ? wRook : bRook] ^= fromTo;
+		bb[(piece < 6) ? wRook : bRook] ^= fromTo;
 		bb[move.getPieceColor()] ^= fromTo;
 		occupied ^= fromTo;
 		break;
 	case EN_PASSANT:
+		to = 1ULL << ((move.getTo() < 32) ? move.getTo() + 8 : move.getTo() - 8);
+		bb[(move.getPieceColor() == Whites) ? Blacks : Whites] ^= to;
+		bb[(move.getPiece() == wPawn) ? bPawn : wPawn] ^= to;
+		occupied ^= to;
 		break;
-	case GENERIC_PROM:
+	case BISHOP_PROM:
 		break;
+	case KNIGHT_PROM:
+		break;
+	case ROOK_PROM:
+		break;
+	case QUEEN_PROM:
+		break;
+	}
+	if (move.getSpecialMove() != DOUBLE_PUSH) {
+		enPassantSquare = 0;
 	}
 
 	changeTurn();
-
 }
 
 void Board::unMakeMove(Move move)
 {
-	makeMove(move);
+	int piece = move.getPiece();
+	U64 from = 1ULL << move.getFrom();
+	U64 to = 1ULL << move.getTo();
+	U64 fromTo = from | to;
+	bb[piece] ^= fromTo;
+	bb[move.getPieceColor()] ^= fromTo;
+	if (move.isCapture()) {
+		bb[move.getCapturedPiece()] ^= to;
+		bb[move.getCaptureColor()] ^= to;
+		occupied ^= from;
+	}
+	else
+		occupied ^= fromTo;
+
+	switch (piece) {
+	case wKing:
+		setCastlingRight(wKingSide);
+		setCastlingRight(wQueenSide);
+		break;
+	case bKing:
+		setCastlingRight(bKingSide);
+		setCastlingRight(bQueenSide);
+		break;
+	case wRook:
+		if (move.getFrom() == 56)
+			setCastlingRight(wQueenSide);
+		else if (move.getFrom() == 63)
+			setCastlingRight(wKingSide);
+		break;
+	case bRook:
+		if (move.getFrom() == 0)
+			setCastlingRight(bQueenSide);
+		else if (move.getFrom() == 7)
+			setCastlingRight(bKingSide);
+		break;
+	}
+
+	switch (move.getSpecialMove()) {
+	case DOUBLE_PUSH:
+		enPassantSquare = move.getTo();
+		break;
+	case KING_CASTLING:
+		from <<= 3;
+		to >>= 1;
+		fromTo = from | to;
+		bb[(piece < 6) ? wRook : bRook] ^= fromTo;
+		bb[move.getPieceColor()] ^= fromTo;
+		occupied ^= fromTo;
+		break;
+	case QUEEN_CASTLING:
+		from >>= 4;
+		to <<= 1;
+		fromTo = from | to;
+		bb[(piece < 6) ? wRook : bRook] ^= fromTo;
+		bb[move.getPieceColor()] ^= fromTo;
+		occupied ^= fromTo;
+		break;
+	case EN_PASSANT:
+		to = 1ULL << ((move.getTo() < 32) ? move.getTo() + 8 : move.getTo() - 8);
+		bb[(move.getPieceColor() == Whites) ? Blacks : Whites] ^= to;
+		bb[(move.getPiece() == wPawn) ? bPawn : wPawn] ^= to;
+		occupied ^= to;
+		break;
+	case BISHOP_PROM:
+		break;
+	case KNIGHT_PROM:
+		break;
+	case ROOK_PROM:
+		break;
+	case QUEEN_PROM:
+		break;
+	}
+	if (move.getSpecialMove() != DOUBLE_PUSH) {
+		enPassantSquare = 0;
+	}
+	changeTurn();
 }
 
 void Board::initAttackArrs()
@@ -172,7 +311,6 @@ int Board::getCastlingRight(CastlingRights right) { return castlingRights & righ
 
 void Board::setWhiteTurn(bool turn) { whiteTurn = turn; }
 void Board::changeTurn() { whiteTurn = !whiteTurn; }
-void Board::setEnPassantSquare(int shift) { enPassantSquare <= shift; }
 void Board::setCastlingRight(CastlingRights right) { castlingRights ^= right; }
 
 
@@ -288,7 +426,7 @@ void Board::setBoard(std::string FEN)
 		}
 		else if (isalpha(c) && isdigit(++c)) {
 			c--;
-			setEnPassantSquare(c - 97);
+			enPassantSquare = c - 97;
 		}
 		/*else if ("halfMoveclock int") {
 

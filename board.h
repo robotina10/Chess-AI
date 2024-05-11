@@ -7,8 +7,8 @@ typedef std::uint64_t U64;
 enum Pieces {wKing, wQueen, wRook, wBishop, wKnight, wPawn, bKing, bQueen, bRook, bBishop, bKnight, bPawn, Whites, Blacks, EMPTY };
 enum CastlingRights { wKingSide = 1, wQueenSide = 2, bKingSide = 4, bQueenSide = 8 };
 
-//const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const std::string defaultFEN = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+//const std::string defaultFEN = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
 
 const U64 notAFile = ~0x0101010101010101;
 const U64 notHFile = ~0x8080808080808080;
@@ -34,24 +34,26 @@ class Board {
 	bool whiteTurn = true;
 
 	void getMovesFromPawnCaptureBB(MoveList& moveList, U64 bb, Pieces piece, int captureDistance);
-	void getMovesFromPushBB(MoveList& moveList, U64 bb, Pieces piece, int pushDistance);
+	void getMovesFromPushBB(MoveList& moveList, U64 bb, Pieces piece, int pushDistance, SpecialMove doublePush);
+	void getEnPassantMoves(MoveList& moveList, U64 bb, Pieces piece, int dir);
 
 public:
 	void setBoard(std::string FEN = defaultFEN);
 	Pieces getPiece(int pos);
 	void initAttackArrs();
 
-	void getWhitePawnMoves(MoveList& moveList);
-	void getBlackPawnMoves(MoveList& moveList);
-	void getKnightMoves(Pieces knight, MoveList& moveList);
-	void getKingMoves(Pieces king, MoveList& moveList);
-	void getRookMoves(Pieces rook, MoveList& moveList);
-	void getBishopMoves(Pieces bishop, MoveList& moveList);
-	void getQueenMoves(Pieces queen, MoveList& moveList);
+	void getWhitePawnMoves(MoveList& moveList, U64 check);
+	void getBlackPawnMoves(MoveList& moveList, U64 check);
+	void getKnightMoves(Pieces knight, MoveList& moveList, U64 check);
+	void getKingMoves(Pieces king, MoveList& moveList, U64 check);
+	void getRookMoves(Pieces rook, MoveList& moveList, U64 check);
+	void getBishopMoves(Pieces bishop, MoveList& moveList, U64 check);
+	void getQueenMoves(Pieces queen, MoveList& moveList, U64 check);
 	void getCastlingMoves(Pieces king, MoveList& moveList);
 	bool attacked(int to, bool side);
 	bool inCheck(int to, bool side);
 	bool inCheck(Move move, bool side);
+	U64 attacksToKing(int to, bool side);
 	int generateLegalMoves(MoveList& moveList);
 
 	void placePiece(Pieces piece, int pos);
@@ -71,7 +73,6 @@ public:
 
 	void setWhiteTurn(bool turn);
 	void changeTurn();
-	void setEnPassantSquare(int shift);
 	void setCastlingRight(CastlingRights right);
 
 	void printBitboard(int index);
