@@ -24,13 +24,14 @@ void initKnightAttacks()
 	}
 }
 
-void Board::getKnightMoves(Pieces knight, MoveList &moveList, U64 check)
+void Board::getKnightMoves(Pieces knight, MoveList &moveList, CheckingPieces checkingPieces)
 {
 	U64 knights = bb[knight];  
 
 	while (knights) {
 		int from = bitScanForwardWithReset(knights);
 		U64 attack = knightAttacks[from] & (getEmpty() | getEnemy(knight));
+		attack &= checkingPieces.bb;
 		while (attack) {
 			int to = bitScanForwardWithReset(attack);
 			Move move;
@@ -38,9 +39,6 @@ void Board::getKnightMoves(Pieces knight, MoveList &moveList, U64 check)
 				move = { from, to, knight, getPiece(to), NONE };
 			else
 				move = { from, to, knight, EMPTY, NONE };
-			if (inCheck(move, whiteTurn)) {
-				continue;
-			}
 			moveList.moves[moveList.count++] = move;
 		}
 	}

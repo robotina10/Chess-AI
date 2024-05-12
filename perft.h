@@ -2,11 +2,10 @@
 #include <chrono>
 #include "board.h"
 #include <thread>
-//https://medium.com/codex/c-multithreading-the-simple-way-95aa1f7304a2 https://www.tutorialspoint.com/cplusplus/cpp_multithreading.htm
-//https://www.chessprogramming.org/Checks_and_Pinned_Pieces_(Bitboards)
 //https://www.chessprogramming.org/index.php?title=Bitboards&mobileaction=toggle_view_desktop
 //https://www.chessprogramming.org/Perft_Results
 //https://core.ac.uk/download/572627675.pdf
+//https://www.chessprogramming.org/Checks_and_Pinned_Pieces_(Bitboards)
 using namespace std::chrono;
 
 long long Perft(Board& board, int depth)
@@ -26,7 +25,7 @@ long long Perft(Board& board, int depth)
 	return count;
 }
 
-int getPerftWithTime(Board& board, int depth)
+long long getPerftWithTime(Board& board, int depth)
 {
 	auto start = high_resolution_clock::now();
 	long long nodes = Perft(board, depth);

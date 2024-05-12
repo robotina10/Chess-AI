@@ -44,11 +44,13 @@ void Board::getCastlingMoves(Pieces king, MoveList& moveList)
 	}
 }
 
-void Board::getKingMoves(Pieces king, MoveList& moveList, U64 check)
+void Board::getKingMoves(Pieces king, MoveList& moveList)
 {
 	if (bb[king]) {
 		int from = bitScanForward(bb[king]);
 		U64 attack = kingAttacks[from] & (getEmpty() | getEnemy(king));
+		//U64 enemyAttack = getEnemyAttack(whiteTurn);
+		//attack &= enemyAttack;
 		while (attack) {
 			int to = bitScanForwardWithReset(attack);
 			if (inCheck(to, whiteTurn))

@@ -5,10 +5,16 @@
 typedef std::uint64_t U64;
 
 enum Pieces {wKing, wQueen, wRook, wBishop, wKnight, wPawn, bKing, bQueen, bRook, bBishop, bKnight, bPawn, Whites, Blacks, EMPTY };
+
+struct CheckingPieces {
+	int count = 0;
+	Pieces piece;
+	U64 bb;
+};
+
 enum CastlingRights { wKingSide = 1, wQueenSide = 2, bKingSide = 4, bQueenSide = 8 };
 
 const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-//const std::string defaultFEN = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
 
 const U64 notAFile = ~0x0101010101010101;
 const U64 notHFile = ~0x8080808080808080;
@@ -42,18 +48,24 @@ public:
 	Pieces getPiece(int pos);
 	void initAttackArrs();
 
-	void getWhitePawnMoves(MoveList& moveList, U64 check);
-	void getBlackPawnMoves(MoveList& moveList, U64 check);
-	void getKnightMoves(Pieces knight, MoveList& moveList, U64 check);
-	void getKingMoves(Pieces king, MoveList& moveList, U64 check);
-	void getRookMoves(Pieces rook, MoveList& moveList, U64 check);
-	void getBishopMoves(Pieces bishop, MoveList& moveList, U64 check);
-	void getQueenMoves(Pieces queen, MoveList& moveList, U64 check);
+	void getWhitePawnMoves(MoveList& moveList, CheckingPieces checkingPieces);
+	void getBlackPawnMoves(MoveList& moveList, CheckingPieces checkingPieces);
+	void getKnightMoves(Pieces knight, MoveList& moveList, CheckingPieces checkingPieces);
+	void getKingMoves(Pieces king, MoveList& moveList);
+	void getRookMoves(Pieces rook, MoveList& moveList, CheckingPieces checkingPieces);
+	void getBishopMoves(Pieces bishop, MoveList& moveList, CheckingPieces checkingPieces);
+	void getQueenMoves(Pieces queen, MoveList& moveList, CheckingPieces checkingPieces);
 	void getCastlingMoves(Pieces king, MoveList& moveList);
 	bool attacked(int to, bool side);
 	bool inCheck(int to, bool side);
-	bool inCheck(Move move, bool side);
-	U64 attacksToKing(int to, bool side);
+	U64 xrayRookAttacks(U64 occ, U64 blockers, int rookSq);
+	U64 xrayBishopAttacks(U64 occ, U64 blockers, int bishopSq);
+	bool isPinned(int from, bool side);
+	U64 getEnemyAttack(bool side);
+	U64 getPieceAttack(Pieces piece, int from);
+	void findCheckingPieces(CheckingPieces &cp, bool side);
+	void generateWhiteMoves(MoveList& moveList, CheckingPieces checkingPieces);
+	void generateBlackMoves(MoveList& moveList, CheckingPieces checkingPieces);
 	int generateLegalMoves(MoveList& moveList);
 
 	void placePiece(Pieces piece, int pos);

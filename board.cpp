@@ -57,27 +57,6 @@ bool Board::attacked(int to, bool side)
 	}
 }
 
-U64 Board::attacksToKing(int to, bool side)
-{
-	if (!side) {
-
-		U64 queenRook = bb[wQueen] | bb[wRook];
-		U64 queenBishop = bb[wBishop] | bb[wQueen];
-		return knightAttacks[to] & bb[wKnight] 
-			| pawnAttacks[0][to] & bb[wPawn] 
-			| rookAttack(to, occupied) & queenRook 
-			| bishopAttack(to, occupied) & queenBishop;
-	}
-	else {
-		U64 queenRook = bb[bQueen] | bb[bRook];
-		U64 queenBishop = bb[bBishop] | bb[bQueen];
-		return knightAttacks[to] & bb[bKnight]
-			| pawnAttacks[1][to] & bb[bPawn]
-			| rookAttack(to, occupied) & queenRook
-			| bishopAttack(to, occupied) & queenBishop;
-	}
-}
-
 bool Board::inCheck(int to, bool side)
 {
 	int king = wKing;
@@ -89,41 +68,236 @@ bool Board::inCheck(int to, bool side)
 	return check;
 }
 
-bool Board::inCheck(Move move, bool side)
+U64 Board::getEnemyAttack(bool side)
 {
-	int ep = enPassantSquare;
-	makeMove(move);
-	int king = wKing;
-	if (!side) 
-		king = bKing;
-	int to = bitScanForward(bb[king]);
-	occupied ^= bb[king];
-	bool check = attacked(to, side);
-	occupied ^= bb[king];
-	unMakeMove(move);
-	enPassantSquare = ep;
-	return check;
+	/*if (!side) {
+		U64 knights = bb[wKnight];
+		U64 knightAttack = 0;
+		while (knights) {
+			int from = bitScanForwardWithReset(knights);
+			knightAttack |= knightAttacks[from];
+		U64 pawnAttack = wPawnsCaptureWest(bb[wPawn], bb[Blacks]) | wPawnsCaptureEast(bb[wPawn], bb[Blacks]);
+		U64 queenRook = bb[wQueen] | bb[wRook];
+		U64 queenBishop = bb[wBishop] | bb[wQueen];
+		return knightAttack 
+			| pawnAttack
+			| rookAttack(to, occupied) & queenRook 
+			| bishopAttack(to, occupied) & queenBishop;
+	}
+	else {
+		U64 knights = bb[bKnight];
+
+		while (knights) {
+			int from = bitScanForwardWithReset(knights);
+			U64 attack = knightAttacks[from] & (getEmpty() | getEnemy(knight));
+		U64 westCaptures = bPawnsCaptureWest(bb[bPawn], bb[Whites]) & checkingPieces.bb;
+		getMovesFromPawnCaptureBB(moveList, westCaptures, bPawn, -7);
+		U64 eastCaptures = bPawnsCaptureEast(bb[bPawn], bb[Whites]) & checkingPieces.bb;
+		getMovesFromPawnCaptureBB(moveList, eastCaptures, bPawn, -9);
+		U64 queenRook = bb[bQueen] | bb[bRook];
+		U64 queenBishop = bb[bBishop] | bb[bQueen];
+		return knightAttacks[to] & bb[bKnight]
+			| pawnAttacks[1][to] & bb[bPawn]
+			| rookAttack(to, occupied) & queenRook
+			| bishopAttack(to, occupied) & queenBishop;
+	}*/
+	return 0;
+}
+
+void Board::findCheckingPieces(CheckingPieces &cp, bool side)
+{
+	if (side) {
+		int king = bitScanForward(bb[wKing]);
+		U64 knight = knightAttacks[king] & bb[bKnight];
+		if (knight) {
+			cp.count++;
+			cp.piece = bKnight;
+			cp.bb = knight;
+		}
+		U64 pawn = pawnAttacks[1][king] & bb[bPawn];
+		if (pawn) {
+			cp.count++;
+			cp.piece = bPawn;
+			cp.bb = pawn;
+		}
+		U64 rookAtt = rookAttack(king, occupied);
+		U64 rook = rookAtt & bb[bRook];
+		if (rook) {
+			cp.count++;
+			cp.piece = bRook;
+			cp.bb = rook;
+		}
+		U64 bishopAtt = bishopAttack(king, occupied);
+		U64 bishop = bishopAtt & bb[bBishop];
+		if (bishop) {
+			cp.count++;
+			cp.piece = bBishop;
+			cp.bb = bishop;
+		}
+		U64 queen = (rookAtt | bishopAtt) & bb[bQueen];
+		if (queen) {
+			cp.count++;
+			cp.piece = bQueen;
+			cp.bb = queen;
+		}
+	}
+	else {
+		int king = bitScanForward(bb[bKing]);
+		U64 knight = knightAttacks[king] & bb[wKnight];
+		if (knight) {
+			cp.count++;
+			cp.piece = wKnight;
+			cp.bb = knight;
+		}
+		U64 pawn = pawnAttacks[0][king] & bb[wPawn];
+		if (pawn) {
+			cp.count++;
+			cp.piece = wPawn;
+			cp.bb = pawn;
+		}
+		U64 rookAtt = rookAttack(king, occupied);
+		U64 rook = rookAtt & bb[wRook];
+		if (rook) {
+			cp.count++;
+			cp.piece = wRook;
+			cp.bb = rook;
+		}
+		U64 bishopAtt = bishopAttack(king, occupied);
+		U64 bishop = bishopAtt & bb[wBishop];
+		if (bishop) {
+			cp.count++;
+			cp.piece = wBishop;
+			cp.bb = bishop;
+		}
+		U64 queen = (rookAtt | bishopAtt) & bb[wQueen];
+		if (queen) {
+			cp.count++;
+			cp.piece = wQueen;
+			cp.bb = queen;
+		}
+	}
+}
+
+U64 Board::getPieceAttack(Pieces piece, int from)
+{
+	int king;
+	U64 r;
+	U64 b;
+	if (piece < 6)
+		king = bitScanForward(bb[bKing]);
+	else
+		king = bitScanForward(bb[wKing]);
+	switch (piece) {
+	case wBishop:
+		return bishopAttack(king, occupied) & bishopAttack(from, occupied);
+	case wQueen:
+		r = rookAttack(from, occupied) & rookAttack(king, occupied);
+		b = bishopAttack(from, occupied) & bishopAttack(king, occupied);
+		if (r)
+			return r;
+		else
+			return b;
+	case wRook:
+		return rookAttack(king, occupied) & rookAttack(from, occupied);
+	case bBishop:
+		return bishopAttack(king, occupied) & bishopAttack(from, occupied);
+	case bQueen:
+		r = rookAttack(from, occupied) & rookAttack(king, occupied);
+		b = bishopAttack(from, occupied) & bishopAttack(king, occupied);
+		if (r)
+			return r;
+		else
+			return b;
+	case bRook:
+		return rookAttack(king, occupied) & rookAttack(from, occupied);
+	}
+}
+
+void Board::generateWhiteMoves(MoveList& moveList, CheckingPieces checkingPieces)
+{
+	getWhitePawnMoves(moveList, checkingPieces);
+	getKnightMoves(wKnight, moveList, checkingPieces);
+	getKingMoves(wKing, moveList);
+	getRookMoves(wRook, moveList, checkingPieces);
+	getBishopMoves(wBishop, moveList, checkingPieces);
+	getQueenMoves(wQueen, moveList, checkingPieces);
+}
+
+void Board::generateBlackMoves(MoveList& moveList, CheckingPieces checkingPieces)
+{
+	getBlackPawnMoves(moveList, checkingPieces);
+	getKnightMoves(bKnight, moveList, checkingPieces);
+	getKingMoves(bKing, moveList);
+	getRookMoves(bRook, moveList, checkingPieces);
+	getBishopMoves(bBishop, moveList, checkingPieces);
+	getQueenMoves(bQueen, moveList, checkingPieces);
+}
+
+U64 Board::xrayRookAttacks(U64 occ, U64 blockers, int rookSq) {
+	U64 attacks = rookAttack(occ, rookSq);
+	blockers &= attacks;
+	return attacks ^ rookAttack(occ ^ blockers, rookSq);
+}
+
+U64 Board::xrayBishopAttacks(U64 occ, U64 blockers, int bishopSq) {
+	U64 attacks = bishopAttack(occ, bishopSq);
+	blockers &= attacks;
+	return attacks ^ bishopAttack(occ ^ blockers, bishopSq);
+}
+
+bool Board::isPinned(int from, bool side)
+{
+	U64 pinned = 0;
+	U64 pinner = xrayRookAttacks(occupied, bb[Whites], bitScanForward(bb[wKing]) & (bb[bRook] | bb[bQueen]);
+	while (pinner) {
+		int sq = bitScanForward(pinner);
+		pinned |= obstructed(sq, squareOfKing) & ownPieces;
+		pinner &= pinner - 1;
+	}
+	pinner = xrayBishopAttacks(occupiedBB, ownPieces, squareOfKing) & opBQ;
+	while (pinner) {
+		int sq = bitScanForward(pinner);
+		pinned |= obstructed(sq, squareOfKing) & ownPieces;
+		pinner &= pinner - 1;
+	}
 }
 
 int Board::generateLegalMoves(MoveList& moveList)
 {
-	if (whiteTurn) {
-		U64 check = attacksToKing(bitScanForward(bb[wKing]), whiteTurn);
-		getWhitePawnMoves(moveList, check);
-		getKnightMoves(wKnight, moveList, check);
-		getKingMoves(wKing, moveList, check);
-		getRookMoves(wRook, moveList, check);
-		getBishopMoves(wBishop, moveList, check);
-		getQueenMoves(wQueen, moveList, check);
+	CheckingPieces checkingPieces;
+	findCheckingPieces(checkingPieces, whiteTurn);
+	if (!checkingPieces.count) {
+		checkingPieces.bb = ~0;
+		if (whiteTurn)
+			generateWhiteMoves(moveList, checkingPieces);
+		else
+			generateBlackMoves(moveList, checkingPieces);
+	}
+	else if (checkingPieces.count == 1) {
+		if (whiteTurn) {
+			if (checkingPieces.piece == bKnight || checkingPieces.piece == bPawn) {
+				generateWhiteMoves(moveList, checkingPieces);
+			}
+			else {
+				checkingPieces.bb |= getPieceAttack(checkingPieces.piece, bitScanForward(checkingPieces.bb));
+				generateWhiteMoves(moveList, checkingPieces);
+			}
+		}
+		else {
+			if (checkingPieces.piece == wKnight || checkingPieces.piece == wPawn) {
+				generateBlackMoves(moveList, checkingPieces);
+			}
+			else {
+				checkingPieces.bb |= getPieceAttack(checkingPieces.piece, bitScanForward(checkingPieces.bb));
+				generateBlackMoves(moveList, checkingPieces);
+			}
+		}
 	}
 	else {
-		U64 check = attacksToKing(bitScanForward(bb[bKing]), whiteTurn);
-		getBlackPawnMoves(moveList, check);
-		getKnightMoves(bKnight, moveList, check);
-		getKingMoves(bKing, moveList, check);
-		getRookMoves(bRook, moveList, check);
-		getBishopMoves(bBishop, moveList, check);
-		getQueenMoves(bQueen, moveList, check);
+		if (whiteTurn)
+			getKingMoves(wKing, moveList);
+		else
+			getKingMoves(bKing, moveList);
 	}
 	return moveList.count;
 }
