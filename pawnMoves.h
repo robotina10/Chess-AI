@@ -97,7 +97,7 @@ bool isPromotion(int to)
 	return (to > 55 || to < 8) ? true : false;
 }
 
-void Board::getEnPassantMoves(MoveList& moveList, U64 bb, Pieces piece, int dir) //pinned
+void Board::getEnPassantMoves(MoveList& moveList, U64 bb, Pieces piece, int dir)
 {
 	while (bb) {
 		int from = bitScanForwardWithReset(bb);

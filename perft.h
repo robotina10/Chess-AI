@@ -1,11 +1,8 @@
 #pragma once
 #include <chrono>
-#include "board.h"
 #include <thread>
-//https://www.chessprogramming.org/index.php?title=Bitboards&mobileaction=toggle_view_desktop
-//https://www.chessprogramming.org/Perft_Results
-//https://core.ac.uk/download/572627675.pdf
-//https://www.chessprogramming.org/Checks_and_Pinned_Pieces_(Bitboards)
+#include "board.h"
+
 using namespace std::chrono;
 
 long long Perft(Board& board, int depth)

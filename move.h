@@ -1,4 +1,5 @@
 #pragma once
+#include "constants.h"
 
 enum SpecialMove { NONE, EN_PASSANT, KING_CASTLING, QUEEN_CASTLING, GENERIC_PROM, QUEEN_PROM, ROOK_PROM, BISHOP_PROM, KNIGHT_PROM, DOUBLE_PUSH };
 

@@ -1,18 +1,16 @@
 #pragma once
-#include <iostream>
+#include "constants.h"
 #include "move.h"
 
-typedef std::uint64_t U64;
+using namespace pieceColor;
 
-enum Pieces {wKing, wQueen, wRook, wBishop, wKnight, wPawn, bKing, bQueen, bRook, bBishop, bKnight, bPawn, Whites, Blacks, EMPTY };
+enum CastlingRights { wKingSide = 1, wQueenSide = 2, bKingSide = 4, bQueenSide = 8 };
 
 struct CheckingPieces {
 	int count = 0;
 	Pieces piece;
 	U64 bb;
 };
-
-enum CastlingRights { wKingSide = 1, wQueenSide = 2, bKingSide = 4, bQueenSide = 8 };
 
 const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -69,12 +67,10 @@ public:
 	int generateLegalMoves(MoveList& moveList);
 
 	void placePiece(Pieces piece, int pos);
-	void removePiece(Pieces piece, int pos);
 	void makeMove(Move move);
 	void unMakeMove(Move move);
 
 	U64 getEmpty();
-	U64 getOccupied();
 	U64 getBitboard(int index);
 	U64 getBitboard(Pieces index);
 	U64 getEnemy(Pieces piece);
@@ -87,7 +83,6 @@ public:
 	void changeTurn();
 	void setCastlingRight(CastlingRights right);
 
-	void printBitboard(int index);
 	void printBitboard(U64 bb);
 	void printMoves(MoveList& moves);
 };

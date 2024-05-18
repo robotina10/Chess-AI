@@ -1,6 +1,5 @@
 #pragma once
 #include "move.h"
-#include <iostream>
  
 
 Move::Move(int from, int to, int piece, int capturedPiece, int specialMove)
@@ -20,11 +19,11 @@ int Move::getTo()
 int Move::getPiece()
 {
 	return ((move >> 12) & 0xf);
-}
+ }
 
 int Move::getPieceColor()
 {
-	return (getPiece() < 6) ? 12 : 13;
+	return pieceColor::getPieceColor((Pieces)getPiece());
 }
 
 int Move::getCapturedPiece()
@@ -34,7 +33,7 @@ int Move::getCapturedPiece()
 
 int Move::getCaptureColor()
 {
-	return (getCapturedPiece() < 6) ? 12 : 13;
+	return pieceColor::getPieceColor((Pieces)getCapturedPiece());
 }
 
 int Move::getPromotion()
@@ -49,7 +48,7 @@ int Move::getSpecialMove()
 
 bool Move::isCapture() 
 {
-	return getCapturedPiece() != 14; // 14 is EMPTY but it is in board.h
+	return getCapturedPiece() != EMPTY;
 }
 
 bool Move::isPromotion()
