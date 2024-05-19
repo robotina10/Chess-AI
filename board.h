@@ -2,8 +2,6 @@
 #include "constants.h"
 #include "move.h"
 
-using namespace pieceColor;
-
 enum CastlingRights { wKingSide = 1, wQueenSide = 2, bKingSide = 4, bQueenSide = 8 };
 
 struct CheckingPieces {
@@ -12,7 +10,8 @@ struct CheckingPieces {
 	U64 bb;
 };
 
-const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+//const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const std::string defaultFEN = "k//8/8/8/8//K3R2q w KQkq - 0 1";
 
 const U64 notAFile = ~0x0101010101010101;
 const U64 notHFile = ~0x8080808080808080;
@@ -58,8 +57,8 @@ public:
 	bool inCheck(int to, bool side);
 	U64 xrayRookAttacks(U64 occ, U64 blockers, int rookSq);
 	U64 xrayBishopAttacks(U64 occ, U64 blockers, int bishopSq);
-	bool isPinned(int from, bool side);
-	U64 getEnemyAttack(bool side);
+	U64 absolutePins(bool side);
+	//U64 getEnemyAttack(bool side);
 	U64 getPieceAttack(Pieces piece, int from);
 	void findCheckingPieces(CheckingPieces &cp, bool side);
 	void generateWhiteMoves(MoveList& moveList, CheckingPieces checkingPieces);

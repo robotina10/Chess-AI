@@ -12,7 +12,7 @@ const sf::Color BLACK(128, 128, 128);
 const sf::Color HIGHLIGHTED_WHITE(225, 225, 225);
 const sf::Color HIGHLIGHTED_BLACK(178, 178, 178);
 
-const std::vector<std::string> pieceTypes = { "wk", "wq", "wr", "wb", "wn", "wp","bk", "bq", "br", "bb", "bn", "bp" };
+const std::vector<std::string> pieceTypes = { "bk", "wk", "bq", "wq", "br", "wr", "bb", "wb", "bn", "wn", "bp", "wp" };
 
 void draw(sf::RenderWindow& window, ChessEngine& chess, int from, bool whiteView);
 void dragPiece(sf::RenderWindow& window, Board& board, sf::Vector2i pos, int squarePos, Pieces pieceType);

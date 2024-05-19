@@ -6,12 +6,8 @@
 #include "perft.h"
 
 //https://core.ac.uk/download/572627675.pdf
-//https://www.chessprogramming.org/Checks_and_Pinned_Pieces_(Bitboards)
-//https://www.chessprogramming.org/Square_Attacked_By#AnyAttackBySide
 //https://www.chessprogramming.org/Perft_Results
-//https://www.chessprogramming.org/index.php?title=Bitboards&mobileaction=toggle_view_desktop
-
-
+//https://www.chessprogramming.org/Checks_and_Pinned_Pieces_(Bitboards)
 
 int main()
 {   
@@ -26,7 +22,7 @@ int main()
     int from  = -1;
     Pieces selectedPiece = EMPTY;
 
-    getPerftWithTime(chess.board, 4);
+    //getPerftWithTime(chess.board, 4);
 
     if (0) {
         chess.board.setWhiteTurn(0);
