@@ -134,10 +134,11 @@ void Board::getMovesFromPawnCaptureBB(MoveList& moveList, U64 bb, Pieces piece, 
 	}
 }
 
-void Board::getWhitePawnMoves(MoveList& moveList, CheckingPieces checkingPieces)
+void Board::getWhitePawnMoves(MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces)
 {
+	//U64 pawns = (bb[wPawn] ^ pinnedPieces) & bb[wPawn];
 	U64 empty = getEmpty();
-	U64 push = wPawnsPush(wPawnsCanPush(bb[wPawn], empty), empty) & checkingPieces.bb;
+	U64 push = wPawnsPush(wPawnsCanPush(, empty), empty) & checkingPieces.bb;
 	getMovesFromPushBB(moveList, push, wPawn, 8, NONE);
 
 	U64 doublePush = wPawnsDoublePush(wPawnsCanDoublePush(bb[wPawn], empty), empty) & checkingPieces.bb;
@@ -153,7 +154,7 @@ void Board::getWhitePawnMoves(MoveList& moveList, CheckingPieces checkingPieces)
 }
 
 
-void Board::getBlackPawnMoves(MoveList& moveList, CheckingPieces checkingPieces)
+void Board::getBlackPawnMoves(MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces)
 {
 	U64 empty = getEmpty();
 	U64 push = bPawnsPush(bPawnsCanPush(bb[bPawn], empty), empty) & checkingPieces.bb;

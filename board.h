@@ -45,24 +45,24 @@ public:
 	Pieces getPiece(int pos);
 	void initAttackArrs();
 
-	void getWhitePawnMoves(MoveList& moveList, CheckingPieces checkingPieces);
-	void getBlackPawnMoves(MoveList& moveList, CheckingPieces checkingPieces);
-	void getKnightMoves(Pieces knight, MoveList& moveList, CheckingPieces checkingPieces);
+	void getWhitePawnMoves(MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces);
+	void getBlackPawnMoves(MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces);
+	void getKnightMoves(Pieces knight, MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces);
 	void getKingMoves(Pieces king, MoveList& moveList);
-	void getRookMoves(Pieces rook, MoveList& moveList, CheckingPieces checkingPieces);
-	void getBishopMoves(Pieces bishop, MoveList& moveList, CheckingPieces checkingPieces);
-	void getQueenMoves(Pieces queen, MoveList& moveList, CheckingPieces checkingPieces);
+	void getRookMoves(Pieces rook, MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces);
+	void getBishopMoves(Pieces bishop, MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces);
+	void getQueenMoves(Pieces queen, MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces);
 	void getCastlingMoves(Pieces king, MoveList& moveList);
 	bool attacked(int to, bool side);
 	bool inCheck(int to, bool side);
 	U64 xrayRookAttacks(U64 occ, U64 blockers, int rookSq);
 	U64 xrayBishopAttacks(U64 occ, U64 blockers, int bishopSq);
-	U64 absolutePins(bool side);
+	U64 findPinnedPieces(bool side);
 	//U64 getEnemyAttack(bool side);
 	U64 getPieceAttack(Pieces piece, int from);
 	void findCheckingPieces(CheckingPieces &cp, bool side);
-	void generateWhiteMoves(MoveList& moveList, CheckingPieces checkingPieces);
-	void generateBlackMoves(MoveList& moveList, CheckingPieces checkingPieces);
+	void generateWhiteMoves(MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces);
+	void generateBlackMoves(MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces);
 	int generateLegalMoves(MoveList& moveList);
 
 	void placePiece(Pieces piece, int pos);

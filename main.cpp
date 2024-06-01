@@ -5,9 +5,6 @@
 #include "game.h"
 #include "perft.h"
 
-//https://core.ac.uk/download/572627675.pdf
-//https://www.chessprogramming.org/Perft_Results
-//https://www.chessprogramming.org/Checks_and_Pinned_Pieces_(Bitboards)
 
 int main()
 {   

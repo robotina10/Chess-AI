@@ -15,7 +15,6 @@ void initKingAttacks()
 
 void Board::getCastlingMoves(Pieces king, MoveList& moveList)
 {
-
 	if (castlingRights) {
 		if (king == wKing) {
 			if (getCastlingRight(wKingSide)) {
