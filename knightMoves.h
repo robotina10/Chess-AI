@@ -27,10 +27,10 @@ void initKnightAttacks()
 	}
 }
 
-void Board::getKnightMoves(Pieces knight, MoveList &moveList, CheckingPieces checkingPieces, U64 pinnedPieces)
+void Board::getKnightMoves(Pieces knight, MoveList &moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
 {
 	U64 knights = bb[knight];  
-	//knights = (knights ^ pinnedPieces) & knights;
+	knights = (knights ^ pinnedPieces.bb) & knights;
 
 	while (knights) {
 		int from = bitScanForwardWithReset(knights);

@@ -19,7 +19,7 @@ int main()
     int from  = -1;
     Pieces selectedPiece = EMPTY;
 
-    //getPerftWithTime(chess.board, 4);
+    getPerftWithTime(chess.board, 4);
 
     if (0) {
         chess.board.setWhiteTurn(0);

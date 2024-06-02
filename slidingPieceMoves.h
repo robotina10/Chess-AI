@@ -82,14 +82,17 @@ U64 bishopAttack(int from, U64 occupied)
 	return diagonalAttacks(occupied, from) | antiDiagAttacks(occupied, from);
 }
 
-void Board::getRookMoves(Pieces rook, MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces)
+void Board::getRookMoves(Pieces rook, MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
 {
 	U64 rooks = bb[rook];
 	while (rooks) {
 		int from = bitScanForwardWithReset(rooks);
 		U64 attack = rookAttack(from, occupied);
 		attack &= getEnemy(rook) | getEmpty();
-		attack &= checkingPieces.bb;
+		if (pinnedPieces.bb & 1ULL << from)
+			attack &= pinnedPieces.attacks;
+		else
+			attack &= checkingPieces.bb;
 		while (attack) {
 			int to = bitScanForwardWithReset(attack);
 			Move move;
@@ -102,14 +105,17 @@ void Board::getRookMoves(Pieces rook, MoveList& moveList, CheckingPieces checkin
 	}
 }
 
-void Board::getBishopMoves(Pieces bishop, MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces)
+void Board::getBishopMoves(Pieces bishop, MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
 {
 	U64 bishops = bb[bishop];
 	while (bishops) {
 		int from = bitScanForwardWithReset(bishops);
 		U64 attack = bishopAttack(from, occupied);
 		attack &= getEnemy(bishop) | getEmpty();
-		attack &= checkingPieces.bb;
+		if (pinnedPieces.bb & 1ULL << from)
+			attack &= pinnedPieces.attacks;
+		else
+			attack &= checkingPieces.bb;
 		while (attack) {
 			int to = bitScanForwardWithReset(attack);
 			Move move;
@@ -122,14 +128,17 @@ void Board::getBishopMoves(Pieces bishop, MoveList& moveList, CheckingPieces che
 	}
 }
 
-void Board::getQueenMoves(Pieces queen, MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces)
+void Board::getQueenMoves(Pieces queen, MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
 {
 	U64 queens = bb[queen];
 	while (queens) {
 		int from = bitScanForwardWithReset(queens);
 		U64 attack = rookAttack(from, occupied) | bishopAttack(from, occupied);
 		attack &= getEnemy(queen) | getEmpty();
-		attack &= checkingPieces.bb;
+		if (pinnedPieces.bb & 1ULL << from)
+			attack &= pinnedPieces.attacks;
+		else
+			attack &= checkingPieces.bb;
 		while (attack) {
 			int to = bitScanForwardWithReset(attack);
 			Move move;

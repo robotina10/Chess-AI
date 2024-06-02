@@ -125,38 +125,37 @@ bool Board::inCheck(int to, bool side)
 
 void Board::findCheckingPieces(CheckingPieces &cp, bool side)
 {
-	side = !side;
-	int king = bitScanForward(bb[wKing + side]);
-	U64 knight = knightAttacks[king] & bb[bKnight + side];
+	int king = bitScanForward(bb[bKing + side]);
+	U64 knight = knightAttacks[king] & bb[wKnight - side];
 	if (knight) {
 		cp.count++;
-		cp.piece = (Pieces)(bKnight + side);
+		cp.piece = (Pieces)(wKnight - side);
 		cp.bb = knight;
 	}
-	U64 pawn = pawnAttacks[1][king] & bb[bPawn + side];
+	U64 pawn = pawnAttacks[1][king] & bb[wPawn - side];
 	if (pawn) {
 		cp.count++;
-		cp.piece = (Pieces)(bPawn + side);
+		cp.piece = (Pieces)(wPawn - side);
 		cp.bb = pawn;
 	}
 	U64 rookAtt = rookAttack(king, occupied);
-	U64 rook = rookAtt & bb[bRook + side];
+	U64 rook = rookAtt & bb[wRook - side];
 	if (rook) {
 		cp.count++;
-		cp.piece = (Pieces)(bRook + side);;
+		cp.piece = (Pieces)(wRook - side);;
 		cp.bb = rook;
 	}
 	U64 bishopAtt = bishopAttack(king, occupied);
-	U64 bishop = bishopAtt & bb[bBishop + side];
+	U64 bishop = bishopAtt & bb[wBishop - side];
 	if (bishop) {
 		cp.count++;
-		cp.piece = (Pieces)(bBishop);
+		cp.piece = (Pieces)(wBishop - side);
 		cp.bb = bishop;
 	}
-	U64 queen = (rookAtt | bishopAtt) & bb[bQueen + side];
+	U64 queen = (rookAtt | bishopAtt) & bb[wQueen - side];
 	if (queen) {
 		cp.count++;
-		cp.piece = (Pieces)(bQueen + side);
+		cp.piece = (Pieces)(wQueen - side);
 		cp.bb = queen;
 	}
 }
@@ -173,46 +172,55 @@ U64 Board::xrayBishopAttacks(U64 occ, U64 blockers, int bishopSq) {
 	return attacks ^ bishopAttack(bishopSq, occ ^ blockers);
 }
 
-U64 Board::findPinnedPieces(bool side)
+void Board::findPinnedPieces(PinnedPieces &pinnedPieces, bool side)
 {
+	U64 pinned;
 	int ownPieces = Blacks + side;
 	int squareOfKing = bitScanForward(bb[bKing + side]);
-	U64 pinned = 0;
 	U64 pinner = xrayRookAttacks(occupied, bb[ownPieces], squareOfKing) & (bb[wRook - side] | bb[wQueen - side]);
 	while (pinner) {
 		int sq = bitScanForwardWithReset(pinner);
-		pinned |= inBetween(sq, squareOfKing) & bb[ownPieces];
+		pinned = inBetween(sq, squareOfKing) & bb[ownPieces];
+		pinnedPieces.bb |= pinned;
+		if (pinned & (bb[bRook + side] | bb[bQueen + side] | bb[bPawn + side])) {
+			if (sq % 8 == squareOfKing % 8)
+				pinnedPieces.attacks |= fileAttacks(occupied, bitScanForward(pinnedPieces.bb)) & (getEmpty() | bb[Whites - side]);
+			else
+				pinnedPieces.attacks |= lineAttacks(occupied, bitScanForward(pinnedPieces.bb)) & (getEmpty() | bb[Whites - side]);
+		}
 	}
 	pinner = xrayBishopAttacks(occupied, bb[ownPieces], squareOfKing) & (bb[wBishop - side] | bb[wQueen - side]);
 	while (pinner) {
 		int sq = bitScanForwardWithReset(pinner);
-		pinned |= inBetween(sq, squareOfKing) & bb[ownPieces];
+		pinned = inBetween(sq, squareOfKing) & bb[ownPieces];
+		pinnedPieces.bb |= pinned;
+		if (pinned & (bb[bBishop + side] | bb[bQueen + side] | bb[bPawn + side])) {
+			if (sq % 9 == squareOfKing % 9)
+				pinnedPieces.attacks |= diagonalAttacks(occupied, bitScanForward(pinnedPieces.bb)) & (getEmpty() | bb[Whites - side]);
+			else
+				pinnedPieces.attacks |= antiDiagAttacks(occupied, bitScanForward(pinnedPieces.bb)) & (getEmpty() | bb[Whites - side]);
+		}
 	}
-	printBitboard(pinned);
-	return pinned;
 }
 
 U64 Board::getPieceAttack(Pieces piece, int from)
 {
+	U64 attack;
 	int king = bitScanForward(bb[bKing + whiteTurn]);
-	U64 r;
-	U64 b;
 	switch (piece + whiteTurn) {
-	case bBishop:
+	case wBishop:
 		return bishopAttack(king, occupied) & bishopAttack(from, occupied);
-	case bQueen:
-		r = rookAttack(from, occupied) & rookAttack(king, occupied);
-		b = bishopAttack(from, occupied) & bishopAttack(king, occupied);
-		if (r)
-			return r;
-		else
-			return b;
-	case bRook:
+	case wQueen:
+		attack = bishopAttack(from, occupied) & bishopAttack(king, occupied);
+		if (attack)
+			return attack;
+		return rookAttack(from, occupied) & rookAttack(king, occupied);
+	case wRook:
 		return rookAttack(king, occupied) & rookAttack(from, occupied);
 	}
 }
 
-void Board::generateWhiteMoves(MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces)
+void Board::generateWhiteMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
 {
 	getWhitePawnMoves(moveList, checkingPieces, pinnedPieces);
 	getKnightMoves(wKnight, moveList, checkingPieces, pinnedPieces);
@@ -222,7 +230,7 @@ void Board::generateWhiteMoves(MoveList& moveList, CheckingPieces checkingPieces
 	getQueenMoves(wQueen, moveList, checkingPieces, pinnedPieces);
 }
 
-void Board::generateBlackMoves(MoveList& moveList, CheckingPieces checkingPieces, U64 pinnedPieces)
+void Board::generateBlackMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
 {
 	getBlackPawnMoves(moveList, checkingPieces, pinnedPieces);
 	getKnightMoves(bKnight, moveList, checkingPieces, pinnedPieces);
@@ -236,7 +244,11 @@ int Board::generateLegalMoves(MoveList& moveList)
 {
 	CheckingPieces checkingPieces;
 	findCheckingPieces(checkingPieces, whiteTurn);
-	U64 pinnedPieces = findPinnedPieces(whiteTurn);
+	PinnedPieces pinnedPieces;
+	findPinnedPieces(pinnedPieces, whiteTurn);
+	printBitboard(pinnedPieces.bb);
+	printBitboard(checkingPieces.bb);
+
 	if (!checkingPieces.count) {
 		checkingPieces.bb = ~0;
 		if (whiteTurn)
@@ -251,6 +263,7 @@ int Board::generateLegalMoves(MoveList& moveList)
 			}
 			else {
 				checkingPieces.bb |= getPieceAttack(checkingPieces.piece, bitScanForward(checkingPieces.bb));
+				printBitboard(checkingPieces.bb);
 				generateWhiteMoves(moveList, checkingPieces, pinnedPieces);
 			}
 		}
