@@ -14,10 +14,10 @@ U64 westOne(U64 b) { return (b & notAFile) >> 1; }
 U64 soWeOne(U64 b) { return (b & notAFile) << 7; }
 U64 noWeOne(U64 b) { return (b & notAFile) >> 9; }
 
-U64 arrRectangular[64][64];
+U64 inBetweenArr[64][64];
 
 U64 inBetween(int from, int to) {
-	return arrRectangular[from][to];
+	return inBetweenArr[from][to];
 }
 
 #pragma warning(disable:4146)
@@ -43,19 +43,7 @@ void initInBetween()
 {
 	for (int i = 0; i < 64; i++) {
 		for (int j = 0; j < 64; j++) {
-			arrRectangular[i][j] = calcInBetween(i, j);
-			/*if (i == j || i + 1 == j || i - 1 == j || i + 8 == j || i - 8 == j)
-				continue;
-			int pos = i * 8 + j;
-			if (i % 8 == j % 8) {
-				arrRectangular[i][j] = fileAttacks(0, pos);
-			}
-			else if (abs(i - j) < 8) {
-
-			}
-			else {
-
-			}*/
+			inBetweenArr[i][j] = calcInBetween(i, j);
 		}
 	}
 }
@@ -203,21 +191,31 @@ void Board::findPinnedPieces(PinnedPieces &pinnedPieces, bool side)
 	}
 }
 
-U64 Board::getPieceAttackingKingAttack(Pieces piece, U64 pieceBB)
+U64 Board::getPieceAttackingKingDirectAttack(Pieces piece, U64 pieceBB)
 {
 	int from = bitScanForward(pieceBB);
 	U64 attack;
 	int king = bitScanForward(bb[bKing + whiteTurn]);
 	switch (piece + whiteTurn) {
-	case wBishop:
-		return (bishopAttack(king, occupied) | pieceBB) & bishopAttack(from, occupied);
 	case wRook:
-		return (rookAttack(king, occupied) | pieceBB) & rookAttack(from, occupied);
+		attack = fileAttacks(occupied, king);
+		return (attack & pieceBB) ? attack: lineAttacks(occupied, king);
+	case wBishop:
+		attack = diagonalAttacks(occupied, king);
+		return (attack & pieceBB) ? attack : antiDiagAttacks(occupied, king);
 	case wQueen:
-		attack = (bishopAttack(from, occupied) | pieceBB) & bishopAttack(king, occupied);
-		if (attack)
+		attack = fileAttacks(occupied, king);
+		if (attack & pieceBB)
 			return attack;
-		return (rookAttack(from, occupied) | pieceBB) & rookAttack(king, occupied);
+		attack = lineAttacks(occupied, king);
+		if (attack & pieceBB)
+			return attack;
+		attack = diagonalAttacks(occupied, king);
+		if (attack & pieceBB)
+			return attack;
+		attack = antiDiagAttacks(occupied, king);
+		if (attack & pieceBB)
+			return attack;
 	}
 }
 
@@ -247,8 +245,9 @@ int Board::generateLegalMoves(MoveList& moveList)
 	findCheckingPieces(checkingPieces, whiteTurn);
 	PinnedPieces pinnedPieces;
 	findPinnedPieces(pinnedPieces, whiteTurn);
-	//printBitboard(pinnedPieces.bb);
-	//printBitboard(checkingPieces.bb);
+	printBitboard(pinnedPieces.bb);
+	printBitboard(pinnedPieces.attacks);
+	printBitboard(checkingPieces.bb);
 
 	if (!checkingPieces.count) {
 		checkingPieces.bb = ~0;
@@ -263,7 +262,7 @@ int Board::generateLegalMoves(MoveList& moveList)
 				generateWhiteMoves(moveList, checkingPieces, pinnedPieces);
 			}
 			else {
-				checkingPieces.bb |= getPieceAttackingKingAttack(checkingPieces.piece, checkingPieces.bb);
+				checkingPieces.bb |= getPieceAttackingKingDirectAttack(checkingPieces.piece, checkingPieces.bb);
 				generateWhiteMoves(moveList, checkingPieces, pinnedPieces);
 			}
 		}
@@ -272,7 +271,7 @@ int Board::generateLegalMoves(MoveList& moveList)
 				generateBlackMoves(moveList, checkingPieces, pinnedPieces);
 			}
 			else {
-				checkingPieces.bb |= getPieceAttackingKingAttack(checkingPieces.piece, checkingPieces.bb);
+				checkingPieces.bb |= getPieceAttackingKingDirectAttack(checkingPieces.piece, checkingPieces.bb);
 				generateBlackMoves(moveList, checkingPieces, pinnedPieces);
 			}
 		}

@@ -150,5 +150,3 @@ void Board::getQueenMoves(Pieces queen, MoveList& moveList, CheckingPieces check
 		}
 	}
 }
-
-/* MAGIC BITBOARDS */

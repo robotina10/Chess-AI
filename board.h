@@ -15,12 +15,11 @@ struct PinnedPieces {
 	U64 attacks = 0;
 };
 
-//const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const std::string defaultFEN = "3k3/5p/8/q5PK/8/8/8/8 b - 0 1";
+const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+//const std::string defaultFEN = "rnbqkbnr/ppp2ppp/8/8/8/8/PPP2PPP/RNBQKBNR w KQkq - 0 1";
+//const std::string defaultFEN = "3k3/5p/8/q5PK/8/8/8/8 b - 0 1";
 //const std::string defaultFEN = "k//8/8/8/8//K3R2q w KQkq - 0 1";
-//const std::string defaultFEN = "k//8/P/8/8//K3P2q w KQkq - 0 1";
 //const std::string defaultFEN = "k///q//8//K3B2 w KQkq - 0 1";
-//const std::string defaultFEN = "8/8/8/P/8/8/8/q4P1K w KQkq - 0 1";
 
 const U64 notAFile = ~0x0101010101010101;
 const U64 notHFile = ~0x8080808080808080;
@@ -68,7 +67,7 @@ public:
 	U64 xrayBishopAttacks(U64 occ, U64 blockers, int bishopSq);
 	void findPinnedPieces(PinnedPieces& pinnedPieces, bool side);
 	//U64 getEnemyAttack(bool side);
-	U64 getPieceAttackingKingAttack(Pieces piece, U64 pieceBB);
+	U64 getPieceAttackingKingDirectAttack(Pieces piece, U64 pieceBB);
 	void findCheckingPieces(CheckingPieces &cp, bool side);
 	void generateWhiteMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces);
 	void generateBlackMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces);
