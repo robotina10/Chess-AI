@@ -30,11 +30,11 @@ int getMoveIndex(MoveList& moveList, int from, int to)
 void makeMove(sf::RenderWindow &window, ChessEngine &chess, int &from, int to, Pieces &piece, int i, SpecialMove promotion)
 {
     Move move = chess.moveList.moves[i];
-    if (move.getPromotion()) {
+    if (move.isPromotion()) {
         move.setPromotion(promotion);
     }
+    chess.gamePositions.push_back(chess.board);
     chess.board.makeMove(move);
-    chess.gameMoveList.moves[chess.gameMoveList.count++] = move;
     chess.moveList.count = 0;
     chess.board.generateLegalMoves(chess.moveList);
     piece = EMPTY;

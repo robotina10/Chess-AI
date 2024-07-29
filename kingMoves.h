@@ -23,9 +23,9 @@ void Board::getCastlingMoves(Pieces king, MoveList& moveList)
 						moveList.moves[moveList.count++] = Move(60, 62, king, EMPTY, KING_CASTLING);
 			}
 			if (getCastlingRight(wQueenSide)) {
-				if (!(attacked(60, whiteTurn) || attacked(59, whiteTurn) || attacked(58, whiteTurn) || attacked(57, whiteTurn)))
+				if (!(attacked(60, whiteTurn) || attacked(59, whiteTurn) || attacked(58, whiteTurn)))
 					if (!(occupied & 0x0e00000000000000))
-						moveList.moves[moveList.count++] = Move(60, 57, king, EMPTY, QUEEN_CASTLING);
+						moveList.moves[moveList.count++] = Move(60, 58, king, EMPTY, QUEEN_CASTLING);
 			}
 		}
 		else {
@@ -35,9 +35,9 @@ void Board::getCastlingMoves(Pieces king, MoveList& moveList)
 						moveList.moves[moveList.count++] = Move(4, 6, king, EMPTY, KING_CASTLING);
 			}
 			if (getCastlingRight(bQueenSide)) {
-				if (!(attacked(4, whiteTurn) || attacked(3, whiteTurn) || attacked(2, whiteTurn) || attacked(1, whiteTurn)))
+				if (!(attacked(4, whiteTurn) || attacked(3, whiteTurn) || attacked(2, whiteTurn)))
 					if (!(occupied & 0xe))
-						moveList.moves[moveList.count++] = Move(4, 1, king, EMPTY, QUEEN_CASTLING);
+						moveList.moves[moveList.count++] = Move(4, 2, king, EMPTY, QUEEN_CASTLING);
 			}
 		}
 	}
@@ -45,19 +45,16 @@ void Board::getCastlingMoves(Pieces king, MoveList& moveList)
 
 void Board::getKingMoves(Pieces king, MoveList& moveList)
 {
-	if (bb[king]) {
-		int from = bitScanForward(bb[king]);
-		U64 attack = kingAttacks[from] & (getEmpty() | getEnemy(king));
-		while (attack) {
-			int to = bitScanForwardWithReset(attack);
-			if (inCheck(to, whiteTurn))
-				continue;
-			if ((1ULL << to) & occupied) {
-				moveList.moves[moveList.count++] = Move(from, to, king, getPiece(to), NONE);
-			}
-			else {
-				moveList.moves[moveList.count++] = Move(from, to, king, EMPTY, NONE);
-			}
+	int from = bitScanForward(bb[king]);
+	U64 attack = kingAttacks[from] & (getEmpty() | getEnemy(king));
+	attack ^= attack & checkedSquares(whiteTurn);
+	while (attack) {
+		int to = bitScanForwardWithReset(attack);
+		if ((1ULL << to) & occupied) {
+			moveList.moves[moveList.count++] = Move(from, to, king, getPiece(to), NONE);
+		}
+		else {
+			moveList.moves[moveList.count++] = Move(from, to, king, EMPTY, NONE);
 		}
 	}
 	getCastlingMoves(king, moveList);

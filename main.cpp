@@ -18,14 +18,13 @@ int main()
     bool mouseMoved = false;
     int from  = -1;
     Pieces selectedPiece = EMPTY;
-   // getPerftWithTime(chess.board, 4);
+    getPerftWithTime(chess.board); // maybe checking pieces & pinned pieces is not good idea
 
     if (0) {
         chess.board.setWhiteTurn(0);
         whiteView = false;
     }
     chess.board.generateLegalMoves(chess.moveList);
-
     while (window.isOpen()) 
     {
         sf::Event event;
@@ -53,7 +52,20 @@ int main()
                     if (chess.moveList.moves[i].isPromotion()) {
                     }
                     makeMove(window, chess, from, to, selectedPiece, i, (SpecialMove)promotion);
-                }
+                    std::cout << chess.board.saveBoardToFen() << "\n";
+
+                    switch (chess.gameState()) {
+                    case DRAW:
+                        std::cout << "DRAW\n";
+                        break;
+                    case WHITE_WIN:
+                        std::cout << "WHITE_WIN\n";
+                        break;
+                    case BLACK_WIN:
+                        std::cout << "BLACK_WIN\n";
+                        break;
+                    }
+                                    }
                 break;
             }
             case sf::Event::MouseButtonReleased:

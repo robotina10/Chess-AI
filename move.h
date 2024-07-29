@@ -1,7 +1,7 @@
 #pragma once
 #include "constants.h"
 
-enum SpecialMove { NONE, EN_PASSANT, KING_CASTLING, QUEEN_CASTLING, GENERIC_PROM, QUEEN_PROM, ROOK_PROM, BISHOP_PROM, KNIGHT_PROM, DOUBLE_PUSH };
+enum SpecialMove { NONE, EN_PASSANT, KING_CASTLING, QUEEN_CASTLING, QUEEN_PROM, ROOK_PROM, BISHOP_PROM, KNIGHT_PROM, DOUBLE_PUSH };
 
 class Move
 {
@@ -14,12 +14,13 @@ public:
 	int getTo();
 	int getPiece();
 	int getPieceColor();
+	int getPieceGroup();
 	int getCapturedPiece();
-	int getCaptureColor();
-	int getPromotion();
+	int getCaptureGroup();
 	int getSpecialMove();
 	bool isCapture();
 	bool isPromotion();
+	bool isCastling();
 	void setPromotion(int promotionPiece);
 	
 	void printMove();

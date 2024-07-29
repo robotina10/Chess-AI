@@ -26,19 +26,20 @@ int Move::getPieceColor()
 	return pieceColor::getPieceColor((Pieces)getPiece());
 }
 
+int Move::getPieceGroup()
+{
+	return (pieceColor::getPieceColor((Pieces)getPiece()) == White) ? Whites : Blacks;
+}
+
+
 int Move::getCapturedPiece()
 {
 	return (move >> 16) & 0xf;
 }
 
-int Move::getCaptureColor()
+int Move::getCaptureGroup()
 {
-	return pieceColor::getPieceColor((Pieces)getCapturedPiece());
-}
-
-int Move::getPromotion()
-{
-	return ((move >> 20) & 0xf) == GENERIC_PROM;
+	return (pieceColor::getOpponentGroup((Pieces)getPiece()));
 }
 
 int Move::getSpecialMove()
@@ -48,12 +49,17 @@ int Move::getSpecialMove()
 
 bool Move::isCapture() 
 {
-	return getCapturedPiece() != EMPTY;
+	return getCapturedPiece() != EMPTY || getSpecialMove() == EN_PASSANT;
 }
 
 bool Move::isPromotion()
 {
-	return ((move >> 20) & 0xf) == GENERIC_PROM;
+	return ((move >> 20) & 0xf) >= QUEEN_PROM && ((move >> 20) & 0xf) <= KNIGHT_PROM;
+}
+
+bool Move::isCastling()
+{
+	return ((move >> 20) & 0xf) == KING_CASTLING || ((move >> 20) & 0xf) == QUEEN_CASTLING;
 }
 
 void Move::setPromotion(int promotionPiece) // can be done maybe better
@@ -65,5 +71,18 @@ void Move::setPromotion(int promotionPiece) // can be done maybe better
 
 void Move::printMove()
 {
-	std::cout << "from:" << (getSpecialMove() & KING_CASTLING) << "\n";
+	const char files[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
+	//std::cout << "From: " << getFrom() << " To: " << getTo() << "\n";
+	if (isPromotion()) {
+		if (getSpecialMove() == QUEEN_PROM)
+			std::cout << files[getFrom() % 8] << 8 - getFrom() / 8 << files[getTo() % 8] << 8 - getTo() / 8 << "q: ";
+		else if (getSpecialMove() == ROOK_PROM)
+			std::cout << files[getFrom() % 8] << 8 - getFrom() / 8 << files[getTo() % 8] << 8 - getTo() / 8 << "r: ";
+		else if (getSpecialMove() == KNIGHT_PROM)
+			std::cout << files[getFrom() % 8] << 8 - getFrom() / 8 << files[getTo() % 8] << 8 - getTo() / 8 << "n: ";
+		else if (getSpecialMove() == BISHOP_PROM)
+			std::cout << files[getFrom() % 8] << 8 - getFrom() / 8 << files[getTo() % 8] << 8 - getTo() / 8 << "b: ";
+	}
+	else
+		std::cout << files[getFrom() % 8] << 8 - getFrom() / 8  << files[getTo() % 8] << 8 - getTo() / 8 << ": ";
 }

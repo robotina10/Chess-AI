@@ -1,9 +1,6 @@
 #pragma once
 #include "board.h"
-//https://core.ac.uk/download/572627675.pdf
-//https://www.chessprogramming.org/Perft_Results
-//https://www.chessprogramming.org/Square_Attacked_By#Obstructed
-//https://www.chessprogramming.org/Checks_and_Pinned_Pieces_(Bitboards)
+
 U64 knightAttacks[64];
 
 const U64 notABFile = ~0x0303030303030303;

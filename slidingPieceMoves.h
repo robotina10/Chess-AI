@@ -72,12 +72,12 @@ U64 antiDiagAttacks(U64 occ, int pos)
 	return forward &= antiDiagMask[pos];
 }
 
-U64 rookAttack(int from, U64 occupied)
+U64 Board::rookAttack(int from, U64 occupied)
 {
 	return lineAttacks(occupied, from) | fileAttacks(occupied, from);
 }
 
-U64 bishopAttack(int from, U64 occupied)
+U64 Board::bishopAttack(int from, U64 occupied)
 {
 	return diagonalAttacks(occupied, from) | antiDiagAttacks(occupied, from);
 }
@@ -90,7 +90,7 @@ void Board::getRookMoves(Pieces rook, MoveList& moveList, CheckingPieces checkin
 		U64 attack = rookAttack(from, occupied);
 		attack &= getEnemy(rook) | getEmpty();
 		if (pinnedPieces.bb & 1ULL << from)
-			attack &= pinnedPieces.attacks;
+			attack &= pinnedPieces.attacks & checkingPieces.bb;
 		else
 			attack &= checkingPieces.bb;
 		while (attack) {
@@ -113,7 +113,7 @@ void Board::getBishopMoves(Pieces bishop, MoveList& moveList, CheckingPieces che
 		U64 attack = bishopAttack(from, occupied);
 		attack &= getEnemy(bishop) | getEmpty();
 		if (pinnedPieces.bb & 1ULL << from)
-			attack &= pinnedPieces.attacks;
+			attack &= pinnedPieces.attacks & checkingPieces.bb;
 		else
 			attack &= checkingPieces.bb;
 		while (attack) {
@@ -136,7 +136,7 @@ void Board::getQueenMoves(Pieces queen, MoveList& moveList, CheckingPieces check
 		U64 attack = rookAttack(from, occupied) | bishopAttack(from, occupied);
 		attack &= getEnemy(queen) | getEmpty();
 		if (pinnedPieces.bb & 1ULL << from)
-			attack &= pinnedPieces.attacks;
+			attack &= pinnedPieces.attacks & checkingPieces.bb;
 		else
 			attack &= checkingPieces.bb;
 		while (attack) {
