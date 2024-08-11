@@ -70,6 +70,17 @@ int bitScanForwardWithReset(U64 &bb) {
 	return idx;
 }
 
+bool Board::attacked(int to, bool side)
+{
+	if (knightAttacks[to] & bb[wKnight - side]) return true;
+	if (pawnAttacks[0 + side][to] & bb[wPawn - side]) return true;
+	U64 queenRook = bb[wQueen - side] | bb[wRook - side];
+	if (rookAttack(to, occupied) & queenRook) return true;
+	U64 queenBishop = bb[wBishop - side] | bb[wQueen - side];
+	if (bishopAttack(to, occupied) & queenBishop) return true;
+	return false;
+}
+
 bool Board::isCheck()
 {
 	int king = bKing + whiteTurn;
@@ -121,17 +132,6 @@ bool Board::isDrawByMaterial()
 bool Board::fiftyMoveRule()
 {
 	return (halfMoveClock >= 100) ? true : false;
-}
-
-bool Board::attacked(int to, bool side)
-{
-	if (knightAttacks[to] & bb[wKnight - side]) return true;
-	if (pawnAttacks[1 - side][to] & bb[wPawn - side]) return true;
-	U64 queenRook = bb[wQueen - side] | bb[wRook - side];
-	if (rookAttack(to, occupied) & queenRook) return true;
-	U64 queenBishop = bb[wBishop - side] | bb[wQueen - side];
-	if (bishopAttack(to, occupied) & queenBishop) return true;
-	return false;
 }
 
 U64 Board::checkedSquares(bool side)
@@ -227,25 +227,29 @@ void Board::findPinnedPieces(PinnedPieces &pinnedPieces, bool side)
 	while (pinner) {
 		int sq = bitScanForwardWithReset(pinner);
 		pinned = inBetween(sq, squareOfKing) & bb[ownPieces];
-		pinnedPieces.bb |= pinned;
+		pinnedPieces.all |= pinned;
 		if (pinned & (bb[bRook + side] | bb[bQueen + side] | bb[bPawn + side])) {
 			if (sq % 8 == squareOfKing % 8)
-				pinnedPieces.attacks |= fileAttacks(occupied, bitScanForward(pinnedPieces.bb)) & (getEmpty() | bb[Whites - side]);
+				pinnedPieces.map[pinned] |= fileAttacks(occupied, bitScanForward(pinned)) & (getEmpty() | bb[Whites - side]);
 			else
-				pinnedPieces.attacks |= lineAttacks(occupied, bitScanForward(pinnedPieces.bb)) & (getEmpty() | bb[Whites - side]);
+				pinnedPieces.map[pinned] |= lineAttacks(occupied, bitScanForward(pinned)) & (getEmpty() | bb[Whites - side]);
 		}
+		else
+			pinnedPieces.map[pinned] = 0;
 	}
 	pinner = xrayBishopAttacks(occupied, bb[ownPieces], squareOfKing) & (bb[wBishop - side] | bb[wQueen - side]);
 	while (pinner) {
 		int sq = bitScanForwardWithReset(pinner);
 		pinned = inBetween(sq, squareOfKing) & bb[ownPieces];
-		pinnedPieces.bb |= pinned;
+		pinnedPieces.all |= pinned;
 		if (pinned & (bb[bBishop + side] | bb[bQueen + side] | bb[bPawn + side])) {
 			if (sq % 9 == squareOfKing % 9)
-				pinnedPieces.attacks |= diagonalAttacks(occupied, bitScanForward(pinnedPieces.bb)) & (getEmpty() | bb[Whites - side]);
+				pinnedPieces.map[pinned] |= diagonalAttacks(occupied, bitScanForward(pinned)) & (getEmpty() | bb[Whites - side]);
 			else
-				pinnedPieces.attacks |= antiDiagAttacks(occupied, bitScanForward(pinnedPieces.bb)) & (getEmpty() | bb[Whites - side]);
+				pinnedPieces.map[pinned] |= antiDiagAttacks(occupied, bitScanForward(pinned)) & (getEmpty() | bb[Whites - side]);
 		}
+		else 
+			pinnedPieces.map[pinned] = 0;
 	}
 }
 
@@ -362,21 +366,21 @@ void Board::makeMove(Move move)
 	}
 
 	switch (piece) {
-	case wKing: //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		setCastlingRight(wKingSide);
-		setCastlingRight(wQueenSide);
+	case wKing:
+		removeCastlingRight(wKingSide);
+		removeCastlingRight(wQueenSide);
 		break;
 	case bKing:
-		setCastlingRight(bKingSide);
-		setCastlingRight(bQueenSide);
+		removeCastlingRight(bKingSide);
+		removeCastlingRight(bQueenSide);
 		break;
 	case wRook:
-		setCastlingRight(wQueenSide);
-		setCastlingRight(wKingSide);
+		removeCastlingRight(wQueenSide);
+		removeCastlingRight(wKingSide);
 		break;
 	case bRook:
-		setCastlingRight(bQueenSide);
-		setCastlingRight(bKingSide);
+		removeCastlingRight(bQueenSide);
+		removeCastlingRight(bKingSide);
 		break;
 	}
 
@@ -452,7 +456,8 @@ int Board::getCastlingRight(CastlingRights right) { return castlingRights & righ
 
 void Board::setWhiteTurn(bool turn) { whiteTurn = turn; }
 void Board::changeTurn() { whiteTurn = !whiteTurn; }
-void Board::setCastlingRight(CastlingRights right) { castlingRights ^= right; }
+void Board::removeCastlingRight(CastlingRights right) { castlingRights = castlingRights & ~right; }
+void Board::setCastlingRight(CastlingRights right) { castlingRights |= right; }
 
 
 Pieces Board::getPiece(int pos)

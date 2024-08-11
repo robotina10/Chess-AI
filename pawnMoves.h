@@ -153,7 +153,7 @@ void Board::getMovesFromPawnCaptureBB(MoveList& moveList, U64 bb, Pieces piece, 
 
 void Board::getWhitePawnMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
 {
-	U64 pawns = bb[wPawn] ^ (pinnedPieces.bb & bb[wPawn]);
+	U64 pawns = bb[wPawn] ^ (pinnedPieces.all & bb[wPawn]);
 	U64 empty = getEmpty();
 	for (int i = 0; i < 2; i++) {
 		U64 push = wPawnsPush(wPawnsCanPush(pawns, empty), empty) & checkingPieces.bb;
@@ -174,21 +174,24 @@ void Board::getWhitePawnMoves(MoveList& moveList, CheckingPieces checkingPieces,
 		findPinnedPieces(e, whiteTurn);
 		bb[bPawn] ^= ep;
 		occupied ^= ep;
-		if (!(e.bb & pawns)) {
+		if (!(e.all & pawns)) {
 			U64 enPassant = wPawnsEnPassant(enPassantSquare, pawns) & checkingPieces.bb;
 			getEnPassantMoves(moveList, enPassant, wPawn, -8);
 		}
-		pawns = pinnedPieces.bb & bb[wPawn];
+		pawns = pinnedPieces.all & bb[wPawn];
 		if (!pawns)
 			return;
-		checkingPieces.bb &= pinnedPieces.attacks;
+		while (pawns) {
+			checkingPieces.bb &= pinnedPieces.map[bitScanForwardWithReset(pawns)];
+		}
+		pawns = pinnedPieces.all & bb[bPawn];
 	}
 }
 
 
 void Board::getBlackPawnMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
 {
-	U64 pawns = bb[bPawn] ^ (pinnedPieces.bb & bb[bPawn]);
+	U64 pawns = bb[bPawn] ^ (pinnedPieces.all & bb[bPawn]);
 	U64 empty = getEmpty();
 	for (int i = 0; i < 2; i++) {
 		U64 push = bPawnsPush(bPawnsCanPush(pawns, empty), empty) & checkingPieces.bb;
@@ -209,13 +212,17 @@ void Board::getBlackPawnMoves(MoveList& moveList, CheckingPieces checkingPieces,
 		findPinnedPieces(e, whiteTurn);
 		bb[wPawn] ^= ep;
 		occupied ^= ep;
-		if (!(e.bb & pawns)) {
+		if (!(e.all & pawns)) {
 			U64 enPassant = bPawnsEnPassant(enPassantSquare, pawns) & checkingPieces.bb;
 			getEnPassantMoves(moveList, enPassant, bPawn, 8);
 		}
-		pawns = pinnedPieces.bb & bb[bPawn];
+		pawns = pinnedPieces.all & bb[bPawn];
 		if (!pawns)
 			return;
-		checkingPieces.bb &= pinnedPieces.attacks;
+		while (pawns) {
+			checkingPieces.bb &= pinnedPieces.map[bitScanForwardWithReset(pawns)];
+		}
+		pawns = pinnedPieces.all & bb[bPawn];
+
 	}
 }

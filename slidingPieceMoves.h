@@ -1,8 +1,6 @@
 #pragma once
 #include "board.h"
 
-/* HYPERBOLA QUINTESSSENCE */
-
 U64 reverse(U64 bb) {
 	const U64 k1 = 0x5555555555555555;
 	const U64 k2 = 0x3333333333333333;
@@ -87,10 +85,11 @@ void Board::getRookMoves(Pieces rook, MoveList& moveList, CheckingPieces checkin
 	U64 rooks = bb[rook];
 	while (rooks) {
 		int from = bitScanForwardWithReset(rooks);
+		U64 rookBB = 1ULL << from;
 		U64 attack = rookAttack(from, occupied);
 		attack &= getEnemy(rook) | getEmpty();
-		if (pinnedPieces.bb & 1ULL << from)
-			attack &= pinnedPieces.attacks & checkingPieces.bb;
+		if (pinnedPieces.all & rookBB)
+			attack &= pinnedPieces.map[rookBB] & checkingPieces.bb;
 		else
 			attack &= checkingPieces.bb;
 		while (attack) {
@@ -110,10 +109,11 @@ void Board::getBishopMoves(Pieces bishop, MoveList& moveList, CheckingPieces che
 	U64 bishops = bb[bishop];
 	while (bishops) {
 		int from = bitScanForwardWithReset(bishops);
+		U64 bishopBB = 1ULL << from;
 		U64 attack = bishopAttack(from, occupied);
 		attack &= getEnemy(bishop) | getEmpty();
-		if (pinnedPieces.bb & 1ULL << from)
-			attack &= pinnedPieces.attacks & checkingPieces.bb;
+		if (pinnedPieces.all & bishopBB)
+			attack &= pinnedPieces.map[bishopBB] & checkingPieces.bb;
 		else
 			attack &= checkingPieces.bb;
 		while (attack) {
@@ -133,10 +133,11 @@ void Board::getQueenMoves(Pieces queen, MoveList& moveList, CheckingPieces check
 	U64 queens = bb[queen];
 	while (queens) {
 		int from = bitScanForwardWithReset(queens);
+		U64 queenBB = 1ULL << from;
 		U64 attack = rookAttack(from, occupied) | bishopAttack(from, occupied);
 		attack &= getEnemy(queen) | getEmpty();
-		if (pinnedPieces.bb & 1ULL << from)
-			attack &= pinnedPieces.attacks & checkingPieces.bb;
+		if (pinnedPieces.all & queenBB)
+			attack &= pinnedPieces.map[queenBB] & checkingPieces.bb;
 		else
 			attack &= checkingPieces.bb;
 		while (attack) {

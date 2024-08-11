@@ -140,6 +140,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board.h" />
+    <ClInclude Include="button.h" />
     <ClInclude Include="ChessEngine.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="game.h" />

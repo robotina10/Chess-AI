@@ -27,9 +27,9 @@ int getMoveIndex(MoveList& moveList, int from, int to)
     return -1;
 }
 
-void makeMove(sf::RenderWindow &window, ChessEngine &chess, int &from, int to, Pieces &piece, int i, SpecialMove promotion)
+void makeMove(sf::RenderWindow &window, ChessEngine &chess, int &from, int to, Pieces &piece, int moveIndex, SpecialMove promotion)
 {
-    Move move = chess.moveList.moves[i];
+    Move move = chess.moveList.moves[moveIndex];
     if (move.isPromotion()) {
         move.setPromotion(promotion);
     }

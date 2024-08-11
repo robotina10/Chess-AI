@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <map>
 #include "constants.h"
 #include "move.h"
 
@@ -12,13 +13,15 @@ struct CheckingPieces {
 	U64 bb = 0;
 };
 
-struct PinnedPieces {
-	U64 bb = 0;
-	U64 attacks = 0;
+struct PinnedPieces
+{
+	U64 all = 0;
+	std::map<U64, U64> map;
 };
 
 const std::string defaultFEN = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
-//const std::string defaultFEN = "";
+//const std::string defaultFEN = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ";
+// 
 //const std::string defaultFEN = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ";
 //const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 //const std::string defaultFEN = "rnbqkbnr/ppp2ppp/8/8/8/8/PPP2PPP/RNBQKBNR w KQkq - 0 1";
@@ -100,6 +103,7 @@ public:
 
 	void setWhiteTurn(bool turn);
 	void changeTurn();
+	void removeCastlingRight(CastlingRights right);
 	void setCastlingRight(CastlingRights right);
 
 	std::string saveBoardToFen();

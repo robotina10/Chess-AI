@@ -27,8 +27,7 @@ void initKnightAttacks()
 void Board::getKnightMoves(Pieces knight, MoveList &moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
 {
 	U64 knights = bb[knight];  
-	knights = (knights ^ pinnedPieces.bb) & knights;
-
+	knights = (knights ^ pinnedPieces.all) & knights;
 	while (knights) {
 		int from = bitScanForwardWithReset(knights);
 		U64 attack = knightAttacks[from] & (getEmpty() | getEnemy(knight));

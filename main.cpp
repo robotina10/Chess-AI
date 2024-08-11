@@ -4,6 +4,7 @@
 #include "draw.h"
 #include "game.h"
 #include "perft.h"
+#include "button.h"
 
 
 int main()
@@ -18,8 +19,9 @@ int main()
     bool mouseMoved = false;
     int from  = -1;
     Pieces selectedPiece = EMPTY;
-    getPerftWithTime(chess.board); // maybe checking pieces & pinned pieces is not good idea
+    Button promotionSelectionBtn("img/prom.png");
 
+    getPerftWithTime(chess.board, 3); 
     if (0) {
         chess.board.setWhiteTurn(0);
         whiteView = false;
@@ -43,16 +45,34 @@ int main()
                     continue;
                 }
                 int to = calcSquarePos(sf::Mouse::getPosition(window), whiteView);
-                int i = getMoveIndex(chess.moveList, from, to);
-                if (i == -1) {
+                int moveIndex = getMoveIndex(chess.moveList, from, to);
+                if (moveIndex == -1) {
                     from = to;
                 }
                 else {
-                    int promotion = NONE;
-                    if (chess.moveList.moves[i].isPromotion()) {
+                    SpecialMove promotion = NONE;
+                    if (chess.moveList.moves[moveIndex].isPromotion()) {
+                        promotionSelectionBtn.drawAndDisplay(window);
+                        while (true) {
+                            promotionSelectionBtn.drawAndDisplay(window);
+                            while (window.pollEvent(event))
+                            {
+                                switch (event.type) {
+                                case sf::Event::Closed:
+                                    window.close();
+                                    break;
+                                case sf::Event::MouseButtonPressed:
+                                    promotion = promotionSelectionBtn.pieceClicked(calcSquarePos(sf::Mouse::getPosition(window), whiteView));
+                                    break;
+                                }
+                            }
+                            if (promotion)
+                                break;
+                        }
                     }
-                    makeMove(window, chess, from, to, selectedPiece, i, (SpecialMove)promotion);
+                    makeMove(window, chess, from, to, selectedPiece, moveIndex, promotion);
                     std::cout << chess.board.saveBoardToFen() << "\n";
+                    //getPerftWithTime(chess.board, 1);
 
                     switch (chess.gameState()) {
                     case DRAW:

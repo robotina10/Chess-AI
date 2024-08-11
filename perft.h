@@ -12,9 +12,8 @@ int checkmates = 0;
 int promotions = 0;
 int castles = 0;
 
-int maxDepth = 3;
 
-long long Perft(Board& board, int depth)
+long long Perft(Board& board, int depth, int maxDepth)
 {
 	if (depth == 0) {
 		return 1;
@@ -36,14 +35,15 @@ long long Perft(Board& board, int depth)
 				promotions++;
 			if (moveList.moves[i].isCastling())
 				castles++;
-			if (board.isCheck())
+			if (board.isCheck()) {
 				checks++;
-			//MoveList ml(256);
-			//board.generateLegalMoves(ml);
-			//if (board.isCheckmate(ml.count))
-				//checkmates++;
+				MoveList ml(256);
+				board.generateLegalMoves(ml);
+				if (!ml.count)
+					checkmates++;
+			}
 		}
-		int c = Perft(board, depth - 1);
+		int c = Perft(board, depth - 1, maxDepth);
 		if (depth == maxDepth) {
 			moveList.moves[i].printMove();
 			std::cout << c << "\n";
@@ -56,7 +56,7 @@ long long Perft(Board& board, int depth)
 	return count;
 }
 
-void getPerftWithTime(Board& board)
+void getPerftWithTime(Board& board, int maxDepth)
 { 
 	/*for (int d = 1; d <= maxDepth; d++) {
 		long long nodes = Perft(board, d);
@@ -65,7 +65,7 @@ void getPerftWithTime(Board& board)
 
 
 	auto start = high_resolution_clock::now();
-	long long nodes = Perft(board, maxDepth);
+	long long nodes = Perft(board, maxDepth, maxDepth);
 	auto stop = high_resolution_clock::now();
 	auto duration = duration_cast<milliseconds>(stop - start);
 	std::cout << "Nodes: " << nodes << "   Time: " << duration.count() / 1000.0 << "\n";
