@@ -153,6 +153,7 @@ void Board::getMovesFromPawnCaptureBB(MoveList& moveList, U64 bb, Pieces piece, 
 
 void Board::getWhitePawnMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
 {
+	printBB(pinnedPieces.all);
 	U64 pawns = bb[wPawn] ^ (pinnedPieces.all & bb[wPawn]);
 	U64 empty = getEmpty();
 	for (int i = 0; i < 2; i++) {
@@ -174,6 +175,7 @@ void Board::getWhitePawnMoves(MoveList& moveList, CheckingPieces checkingPieces,
 		findPinnedPieces(e, whiteTurn);
 		bb[bPawn] ^= ep;
 		occupied ^= ep;
+		// maybe add black ^= ep
 		if (!(e.all & pawns)) {
 			U64 enPassant = wPawnsEnPassant(enPassantSquare, pawns) & checkingPieces.bb;
 			getEnPassantMoves(moveList, enPassant, wPawn, -8);
@@ -182,7 +184,7 @@ void Board::getWhitePawnMoves(MoveList& moveList, CheckingPieces checkingPieces,
 		if (!pawns)
 			return;
 		while (pawns) {
-			checkingPieces.bb &= pinnedPieces.map[bitScanForwardWithReset(pawns)];
+			checkingPieces.bb &= pinnedPieces.map[bitScanForwardWithReset(pawns)]; //tu je mozna problem
 		}
 		pawns = pinnedPieces.all & bb[bPawn];
 	}

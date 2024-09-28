@@ -689,8 +689,9 @@ std::string Board::saveBoardToFen()
 	if (enPassantSquare) {
 		fen.push_back(files[enPassantSquare % 8]);
 		fen.push_back(enPassantSquare / 8 + '0');
+		fen.append(" ");
 	}
-	else
+	else 
 		fen.append("- ");
 	fen.append(std::to_string(halfMoveClock) + " ");
 	fen.append(std::to_string(fullMoveCounter));

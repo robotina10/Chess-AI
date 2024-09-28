@@ -19,9 +19,9 @@ struct PinnedPieces
 	std::map<U64, U64> map;
 };
 
-const std::string defaultFEN = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
+//const std::string defaultFEN = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
+const std::string defaultFEN = "r3k2r/Pp1p1ppp/1bp2nbN/nPP5/BB2P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 2";
 //const std::string defaultFEN = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ";
-// 
 //const std::string defaultFEN = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ";
 //const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 //const std::string defaultFEN = "rnbqkbnr/ppp2ppp/8/8/8/8/PPP2PPP/RNBQKBNR w KQkq - 0 1";
