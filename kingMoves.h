@@ -19,12 +19,12 @@ void Board::getCastlingMoves(Pieces king, MoveList& moveList)
 		if (king == wKing) {
 			if (getCastlingRight(wKingSide)) {
 				if (!(attacked(60, whiteTurn) || attacked(61, whiteTurn) || attacked(62, whiteTurn)))
-					if (!(occupied & 0x0600000000000000))
+					if (!(occupied & 0x6000000000000000))
 						moveList.moves[moveList.count++] = Move(60, 62, king, EMPTY, KING_CASTLING);
 			}
 			if (getCastlingRight(wQueenSide)) {
 				if (!(attacked(60, whiteTurn) || attacked(59, whiteTurn) || attacked(58, whiteTurn)))
-					if (!(occupied & 0x0e00000000000000))
+					if (!(occupied & 0xe00000000000000))
 						moveList.moves[moveList.count++] = Move(60, 58, king, EMPTY, QUEEN_CASTLING);
 			}
 		}

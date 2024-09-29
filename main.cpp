@@ -5,7 +5,7 @@
 #include "game.h"
 #include "perft.h"
 #include "button.h"
- // check if clock are working
+
 
 int main()
 {   
@@ -21,7 +21,7 @@ int main()
     Pieces selectedPiece = EMPTY;
     Button promotionSelectionBtn("img/prom.png");
 
-    getPerftWithTime(chess.board, 1); 
+   getPerftWithTime(chess.board, 2); 
     if (0) {
         chess.board.setWhiteTurn(0);
         whiteView = false;
