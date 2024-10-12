@@ -11,11 +11,11 @@ U64 reverse(U64 bb) {
 	return bb;
 }
 
-U64 singleBB[64];
-U64 rankMask[64];
-U64 fileMask[64];
-U64 diagonalMask[64];
-U64 antiDiagMask[64];
+U64 singleBB[64]{};
+U64 rankMask[64]{};
+U64 fileMask[64]{};
+U64 diagonalMask[64]{};
+U64 antiDiagMask[64]{};
 
 void initSlidingMasks()
 {
@@ -80,7 +80,7 @@ U64 Board::bishopAttack(int from, U64 occupied)
 	return diagonalAttacks(occupied, from) | antiDiagAttacks(occupied, from);
 }
 
-void Board::getRookMoves(Pieces rook, MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
+void Board::getRookMoves(Pieces rook, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces)
 {
 	U64 rooks = bb[rook];
 	while (rooks) {
@@ -89,9 +89,9 @@ void Board::getRookMoves(Pieces rook, MoveList& moveList, CheckingPieces checkin
 		U64 attack = rookAttack(from, occupied);
 		attack &= getEnemy(rook) | getEmpty();
 		if (pinnedPieces.all & rookBB)
-			attack &= pinnedPieces.map[rookBB] & checkingPieces.bb;
+			attack &= pinnedPieces.map[rookBB] & checkingPieces;
 		else
-			attack &= checkingPieces.bb;
+			attack &= checkingPieces;
 		while (attack) {
 			int to = bitScanForwardWithReset(attack);
 			Move move;
@@ -104,7 +104,7 @@ void Board::getRookMoves(Pieces rook, MoveList& moveList, CheckingPieces checkin
 	}
 }
 
-void Board::getBishopMoves(Pieces bishop, MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
+void Board::getBishopMoves(Pieces bishop, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces)
 {
 	U64 bishops = bb[bishop];
 	while (bishops) {
@@ -113,9 +113,9 @@ void Board::getBishopMoves(Pieces bishop, MoveList& moveList, CheckingPieces che
 		U64 attack = bishopAttack(from, occupied);
 		attack &= getEnemy(bishop) | getEmpty();
 		if (pinnedPieces.all & bishopBB)
-			attack &= pinnedPieces.map[bishopBB] & checkingPieces.bb;
+			attack &= pinnedPieces.map[bishopBB] & checkingPieces;
 		else
-			attack &= checkingPieces.bb;
+			attack &= checkingPieces;
 		while (attack) {
 			int to = bitScanForwardWithReset(attack);
 			Move move;
@@ -128,7 +128,7 @@ void Board::getBishopMoves(Pieces bishop, MoveList& moveList, CheckingPieces che
 	}
 }
 
-void Board::getQueenMoves(Pieces queen, MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
+void Board::getQueenMoves(Pieces queen, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces)
 {
 	U64 queens = bb[queen];
 	while (queens) {
@@ -137,9 +137,9 @@ void Board::getQueenMoves(Pieces queen, MoveList& moveList, CheckingPieces check
 		U64 attack = rookAttack(from, occupied) | bishopAttack(from, occupied);
 		attack &= getEnemy(queen) | getEmpty();
 		if (pinnedPieces.all & queenBB)
-			attack &= pinnedPieces.map[queenBB] & checkingPieces.bb;
+			attack &= pinnedPieces.map[queenBB] & checkingPieces;
 		else
-			attack &= checkingPieces.bb;
+			attack &= checkingPieces;
 		while (attack) {
 			int to = bitScanForwardWithReset(attack);
 			Move move;

@@ -151,25 +151,47 @@ void Board::getMovesFromPawnCaptureBB(MoveList& moveList, U64 bb, Pieces piece, 
 	}
 }
 
-void Board::getWhitePawnMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
+void Board::getPawnPushCapturesMoves(int color, MoveList& moveList, U64 pawns, U64 empty, U64 checkingPieces)
+{
+	U64 push;
+	U64 doublePush;
+	U64 westCaptures;
+	U64 eastCaptures;
+
+	switch (color) {
+	case White:
+		push = wPawnsPush(wPawnsCanPush(pawns, empty), empty) & checkingPieces;
+		getMovesFromPushBB(moveList, push, wPawn, 8, NONE);
+
+		doublePush = wPawnsDoublePush(wPawnsCanDoublePush(pawns, empty), empty) & checkingPieces;
+		getMovesFromPushBB(moveList, doublePush, wPawn, 16, DOUBLE_PUSH);
+
+		westCaptures = wPawnsCaptureWest(pawns, bb[Blacks]) & checkingPieces;
+		getMovesFromPawnCaptureBB(moveList, westCaptures, wPawn, 9);
+		eastCaptures = wPawnsCaptureEast(pawns, bb[Blacks]) & checkingPieces;
+		getMovesFromPawnCaptureBB(moveList, eastCaptures, wPawn, 7);
+		break;
+	case Black:
+		push = bPawnsPush(bPawnsCanPush(pawns, empty), empty) & checkingPieces;
+		getMovesFromPushBB(moveList, push, bPawn, -8, NONE);
+
+		doublePush = bPawnsDoublePush(bPawnsCanDoublePush(pawns, empty), empty) & checkingPieces;
+		getMovesFromPushBB(moveList, doublePush, bPawn, -16, DOUBLE_PUSH);
+
+		westCaptures = bPawnsCaptureWest(pawns, bb[Whites]) & checkingPieces;
+		getMovesFromPawnCaptureBB(moveList, westCaptures, bPawn, -7);
+		eastCaptures = bPawnsCaptureEast(pawns, bb[Whites]) & checkingPieces;
+		getMovesFromPawnCaptureBB(moveList, eastCaptures, bPawn, -9);
+		break;
+	}
+}
+
+void Board::getWhitePawnMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces)
 {
 	U64 pawns = bb[wPawn] ^ (pinnedPieces.all & bb[wPawn]);
 	U64 empty = getEmpty();
-	for (int i = 0; i < 2; i++) {
-		U64 push = wPawnsPush(wPawnsCanPush(pawns, empty), empty) & checkingPieces.bb;
-		getMovesFromPushBB(moveList, push, wPawn, 8, NONE);
 
-		U64 doublePush = wPawnsDoublePush(wPawnsCanDoublePush(pawns, empty), empty) & checkingPieces.bb;
-		getMovesFromPushBB(moveList, doublePush, wPawn, 16, DOUBLE_PUSH);
-
-		U64 westCaptures = wPawnsCaptureWest(pawns, bb[Blacks]) & checkingPieces.bb;
-		getMovesFromPawnCaptureBB(moveList, westCaptures, wPawn, 9);
-		U64 eastCaptures = wPawnsCaptureEast(pawns, bb[Blacks]) & checkingPieces.bb;
-		getMovesFromPawnCaptureBB(moveList, eastCaptures, wPawn, 7);
-
-		if (i == 1)
-			return;
-
+	if (enPassantSquare) {
 		PinnedPieces pinned;
 		U64 ep = 1ULL << enPassantSquare;
 		bb[bPawn] ^= ep;
@@ -177,44 +199,33 @@ void Board::getWhitePawnMoves(MoveList& moveList, CheckingPieces checkingPieces,
 		findPinnedPieces(pinned, whiteTurn);
 		bb[bPawn] ^= ep;
 		occupied ^= ep;
-		if (enPassantSquare) {
-			U64 enPassant = wPawnsEnPassant(enPassantSquare, pawns) & checkingPieces.bb;
-			if (!(enPassant & pinned.all))
-				getEnPassantMoves(moveList, enPassant, wPawn, -8);
-		}
 
-		pawns = pinnedPieces.all & bb[wPawn];
-		if (!pawns)
-			return;
+		U64 enPassant;
+		if (checkingPieces & (1ULL << enPassantSquare))
+			enPassant = wPawnsEnPassant(enPassantSquare, pawns);
+		else 
+		enPassant = wPawnsEnPassant(enPassantSquare, pawns) & checkingPieces;
+		if (!(enPassant & pinned.all))
+			getEnPassantMoves(moveList, enPassant, wPawn, -8);
+	}
+	 
+	getPawnPushCapturesMoves(White, moveList, pawns, empty, checkingPieces);
 
-		checkingPieces.bb = 0;
-		while (pawns) {
-			checkingPieces.bb |= pinnedPieces.map[1ULL << bitScanForwardWithReset(pawns)];
-		}
-		pawns = pinnedPieces.all & bb[wPawn];
+	pawns = pinnedPieces.all & bb[wPawn];
+	while (pawns) {
+		U64 pawn = 1ULL << bitScanForwardWithReset(pawns);
+		if (pinnedPieces.map[pawn])
+			getPawnPushCapturesMoves(White, moveList, pawn, empty, checkingPieces & pinnedPieces.map[pawn]);
 	}
 }
 
 
-void Board::getBlackPawnMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
+void Board::getBlackPawnMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces) // checking pieces & pinned pieces for checking pinned pices???
 {
 	U64 pawns = bb[bPawn] ^ (pinnedPieces.all & bb[bPawn]);
 	U64 empty = getEmpty();
-	for (int i = 0; i < 2; i++) {
-		U64 push = bPawnsPush(bPawnsCanPush(pawns, empty), empty) & checkingPieces.bb;
-		getMovesFromPushBB(moveList, push, bPawn, -8, NONE);
 
-		U64 doublePush = bPawnsDoublePush(bPawnsCanDoublePush(pawns, empty), empty) & checkingPieces.bb;
-		getMovesFromPushBB(moveList, doublePush, bPawn, -16, DOUBLE_PUSH);
-
-		U64 westCaptures = bPawnsCaptureWest(pawns, bb[Whites]) & checkingPieces.bb;
-		getMovesFromPawnCaptureBB(moveList, westCaptures, bPawn, -7);
-		U64 eastCaptures = bPawnsCaptureEast(pawns, bb[Whites]) & checkingPieces.bb;
-		getMovesFromPawnCaptureBB(moveList, eastCaptures, bPawn, -9);
-
-		if (i == 1)
-			return;
-
+	if (enPassantSquare) {
 		PinnedPieces pinned;
 		U64 ep = 1ULL << enPassantSquare;
 		bb[wPawn] ^= ep;
@@ -222,21 +233,22 @@ void Board::getBlackPawnMoves(MoveList& moveList, CheckingPieces checkingPieces,
 		findPinnedPieces(pinned, whiteTurn);
 		bb[wPawn] ^= ep;
 		occupied ^= ep;
-		if (enPassantSquare) {
-			U64 enPassant = bPawnsEnPassant(enPassantSquare, pawns) & checkingPieces.bb;
-			if (!(enPassant & pinned.all))
-				getEnPassantMoves(moveList, enPassant, bPawn, 8);
-		}
 
-		pawns = pinnedPieces.all & bb[bPawn];
-		if (!pawns)
-			return;
+		U64 enPassant;
+		if (checkingPieces & (1ULL << enPassantSquare))
+			enPassant = bPawnsEnPassant(enPassantSquare, pawns);
+		else
+		enPassant = bPawnsEnPassant(enPassantSquare, pawns) & checkingPieces;
+		if (!(enPassant & pinned.all))
+			getEnPassantMoves(moveList, enPassant, bPawn, 8);
+	}
 
-		checkingPieces.bb = 0;
-		while (pawns) {
-			checkingPieces.bb |= pinnedPieces.map[1ULL << bitScanForwardWithReset(pawns)];
-		}
-		pawns = pinnedPieces.all & bb[bPawn];
+	getPawnPushCapturesMoves(Black, moveList, pawns, empty, checkingPieces);
 
+	pawns = pinnedPieces.all & bb[bPawn];
+	while (pawns) {
+		U64 pawn = 1ULL << bitScanForwardWithReset(pawns);
+		if (pinnedPieces.map[pawn])
+			getPawnPushCapturesMoves(Black, moveList, pawn, empty, checkingPieces & pinnedPieces.map[pawn]);
 	}
 }

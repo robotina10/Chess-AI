@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include "ChessEngine.h"
 #include "board.h"
 #include "move.h"
 
@@ -9,12 +10,12 @@ public:
     Board board;
     MoveList moveList;
     std::vector<Board> gamePositions;
-    ChessEngine() : moveList(256) { board.setBoard(); board.initAttackArrs(); }
+    ChessEngine() : moveList(256) { board.init(); }
 
     State gameState() {
         if (board.isCheckmate(moveList.count))
             return (board.isWhiteTurn()) ? BLACK_WIN : WHITE_WIN;
-        if (board.isStalemate(moveList.count) || board.isDrawByMaterial() || board.fiftyMoveRule())
+        if (board.isDraw(moveList.count))
             return DRAW;
         return PLAYING;
     }

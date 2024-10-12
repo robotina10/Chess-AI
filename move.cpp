@@ -37,11 +37,6 @@ int Move::getCapturedPiece()
 	return (move >> 16) & 0xf;
 }
 
-int Move::getCaptureGroup()
-{
-	return (pieceColor::getOpponentGroup((Pieces)getPiece()));
-}
-
 int Move::getSpecialMove()
 {
 	return (move >> 20) & 0xf;
@@ -49,7 +44,7 @@ int Move::getSpecialMove()
 
 bool Move::isCapture() 
 {
-	return getCapturedPiece() != EMPTY || getSpecialMove() == EN_PASSANT;
+	return getCapturedPiece() != EMPTY;
 }
 
 bool Move::isPromotion()
@@ -67,7 +62,6 @@ void Move::setPromotion(int promotionPiece) // can be done maybe better
 	move &= ~(0xfff << 20);
 	move |= (promotionPiece & 0xf) << 20;
 }
-
 
 void Move::printMove()
 {

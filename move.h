@@ -16,13 +16,11 @@ public:
 	int getPieceColor();
 	int getPieceGroup();
 	int getCapturedPiece();
-	int getCaptureGroup();
 	int getSpecialMove();
 	bool isCapture();
 	bool isPromotion();
 	bool isCastling();
 	void setPromotion(int promotionPiece);
-	
 	void printMove();
 };
 

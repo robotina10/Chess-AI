@@ -1,13 +1,13 @@
 #include "draw.h"
 
-void drawPieces(sf::RenderWindow& window, Board &board, bool whiteView)
+void drawPieces(sf::RenderWindow& win, Board &board, bool whiteView)
 {
 	for (int pieceIndex = 0; pieceIndex < pieceTypes.size(); pieceIndex++) {
 		U64 bitboard = board.getBitboard(pieceIndex);
 		for (int i = 0; i < 64; i++) {
 			if ((bitboard >> i) & 1) {
 				sf::Texture texture;
-				if (!texture.loadFromFile("img/" + pieceTypes[pieceIndex] + ".png")) {
+				if (!texture.loadFromFile("img/" + pieceTypes[pieceIndex] + ".png")) { 
 					std::cout << "Cannot load piece img";
 					exit(-1);
 				}
@@ -20,17 +20,16 @@ void drawPieces(sf::RenderWindow& window, Board &board, bool whiteView)
 				if (whiteView) {
 				    x = SIDE * (i % 8) + SIDE / 10;
 				    y = SIDE * (i / 8) + SIDE / 10;
-
 				}
 				piece.setPosition(sf::Vector2f(x, y));
 				piece.setScale(sf::Vector2f(1.3f, 1.3f));
-				window.draw(piece);
+				win.draw(piece);
 			}
 		}
 	}
 }
 
-void drawBoard(sf::RenderWindow &window)
+void drawBoard(sf::RenderWindow &win)
 {
 	sf::RectangleShape rect(sf::Vector2f(SIDE, SIDE));
 	for (int i = 0; i < ROWS; i++) {
@@ -42,12 +41,12 @@ void drawBoard(sf::RenderWindow &window)
 			else {
 				rect.setFillColor(BLACK);
 			}
-			window.draw(rect);
+			win.draw(rect);
 		}
 	}
 }
 
-void highlightSquare(sf::RenderWindow& window, Board& board, int squarePos, bool whiteView)
+void highlightSquare(sf::RenderWindow& win, Board& board, int squarePos, bool whiteView)
 {
 	if (squarePos == -1)
 		return;
@@ -62,10 +61,10 @@ void highlightSquare(sf::RenderWindow& window, Board& board, int squarePos, bool
 		rect.setFillColor(HIGHLIGHTED_WHITE);
 	else 
 		rect.setFillColor(HIGHLIGHTED_BLACK);
-	window.draw(rect);
+	win.draw(rect);
 }
 
-void drawPossibleMoves(sf::RenderWindow& window, MoveList &moveList, int from, bool whiteView)
+void drawPossibleMoves(sf::RenderWindow& win, MoveList &moveList, int from, bool whiteView)
 {
 	sf::RectangleShape rect(sf::Vector2f(SIDE, SIDE));
 	for (int i = 0; i < moveList.count; i++) {
@@ -78,16 +77,16 @@ void drawPossibleMoves(sf::RenderWindow& window, MoveList &moveList, int from, b
 			int x = to % 8;
 			rect.setFillColor(sf::Color::Red);
 			rect.setPosition(x * SIDE, y * SIDE);
-			/*if ((move.getFrom() + move.getTo()) % 2 == 0)
+			if ((moveList.moves[i].getFrom() % 8 + moveList.moves[i].getFrom() | 8 + x + y) % 2 == 0)
 				rect.setFillColor(HIGHLIGHTED_WHITE);
 			else
-				rect.setFillColor(HIGHLIGHTED_BLACK);*/
-			window.draw(rect);
+				rect.setFillColor(HIGHLIGHTED_BLACK);
+			win.draw(rect);
 		}
 	}
 }
 
-void drawRanksFiles(sf::RenderWindow& window)
+void drawRanksFiles(sf::RenderWindow& win)
 {
 	/*sf::Font font;
 	if (!font.loadFromFile("arial.ttf"))
@@ -105,7 +104,7 @@ void drawRanksFiles(sf::RenderWindow& window)
 	}*/
 }
 
-void dragPiece(sf::RenderWindow& window, Board& board, sf::Vector2i pos, int squarePos, Pieces pieceType)
+void dragPiece(sf::RenderWindow& win, Board& board, sf::Vector2i pos, int squarePos, Pieces pieceType)
 {
 	sf::Texture texture;
 	if (!texture.loadFromFile("img/" + pieceTypes[pieceType] + ".png")) {
@@ -116,16 +115,16 @@ void dragPiece(sf::RenderWindow& window, Board& board, sf::Vector2i pos, int squ
 	sf::Sprite piece(texture);
 	piece.setPosition(sf::Vector2f(pos.x, pos.y));
 	piece.setScale(sf::Vector2f(1.8f, 1.8f));
-	window.draw(piece);
+	win.draw(piece);
 }
 
-void draw(sf::RenderWindow &window, ChessEngine &chess, int from, bool whiteView)
+void draw(sf::RenderWindow &win, ChessEngine &chess, int from, bool whiteView)
 {
-	window.clear();
-	drawBoard(window);
-	highlightSquare(window, chess.board, from, whiteView);
-	drawPossibleMoves(window, chess.moveList, from, whiteView);
-	drawPieces(window, chess.board, whiteView);
-	drawRanksFiles(window);
-	window.display();
+	win.clear();
+	drawBoard(win);
+	highlightSquare(win, chess.board, from, whiteView);
+	drawPossibleMoves(win, chess.moveList, from, whiteView);
+	drawPieces(win, chess.board, whiteView);
+	drawRanksFiles(win);
+	win.display();
 }

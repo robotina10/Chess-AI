@@ -19,15 +19,8 @@ struct PinnedPieces
 	std::map<U64, U64> map;
 };
 
-//const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
-//const std::string defaultFEN = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
-
-//const std::string defaultFEN = "";
-const std::string defaultFEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ";
-//const std::string defaultFEN = "3k3/5p/8/q5PK/8/8/8/8 b - 0 1";
-//const std::string defaultFEN = "k//8/8/8/8//K3R2q w KQkq - 0 1";
-//const std::string defaultFEN = "k///q//8//K3B2 w KQkq - 0 1";
+const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+//const std::string defaultFEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - "; // perft 5: 193690690
 
 const U64 notAFile = ~0x0101010101010101;
 const U64 notHFile = ~0x8080808080808080;
@@ -44,8 +37,10 @@ U64 noWeOne(U64 b);
 int bitScanForward(U64 bb);
 int bitScanForwardWithReset(U64 &bb);
 
+
 class Board {
 	U64 bb[14]{};
+	int piecesCount[12]{};
 	U64 occupied = 0;
 
 	int castlingRights = 0;
@@ -55,28 +50,21 @@ class Board {
 	int halfMoveClock = 0;
 	int fullMoveCounter = 1;
 
+	void getPawnPushCapturesMoves(int color, MoveList& moveList, U64 pawns, U64 empty, U64 checkingPieces);
 	void getMovesFromPawnCaptureBB(MoveList& moveList, U64 bb, Pieces piece, int captureDistance);
 	void getMovesFromPushBB(MoveList& moveList, U64 bb, Pieces piece, int pushDistance, SpecialMove doublePush);
 	void getEnPassantMoves(MoveList& moveList, U64 bb, Pieces piece, int dir);
-
-public:
-	void setBoard(std::string FEN = defaultFEN);
-	Pieces getPiece(int pos);
-	void initAttackArrs();
-
-	bool isCheck();
-	bool isCheckmate(int moveListCount);
-	bool isStalemate(int moveListCount);
-	bool isDrawByMaterial();
-	bool fiftyMoveRule();
-	void getWhitePawnMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces);
-	void getBlackPawnMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces);
-	void getKnightMoves(Pieces knight, MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces);
+	void removeRooksCastlingRights(int rook, int pos);
+	void getKnightMoves(Pieces knight, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
 	void getKingMoves(Pieces king, MoveList& moveList);
-	void getRookMoves(Pieces rook, MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces);
-	void getBishopMoves(Pieces bishop, MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces);
-	void getQueenMoves(Pieces queen, MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces);
+	void getRookMoves(Pieces rook, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
+	void getBishopMoves(Pieces bishop, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
+	void getQueenMoves(Pieces queen, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
 	void getCastlingMoves(Pieces king, MoveList& moveList);
+	void getWhitePawnMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
+	void getBlackPawnMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
+	void generateWhiteMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
+	void generateBlackMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
 	U64 rookAttack(int from, U64 occupied);
 	U64 bishopAttack(int from, U64 occupied);
 	bool attacked(int to, bool side);
@@ -85,27 +73,42 @@ public:
 	U64 xrayBishopAttacks(U64 occ, U64 blockers, int bishopSq);
 	void findPinnedPieces(PinnedPieces& pinnedPieces, bool side);
 	U64 getPieceAttackingKingDirectAttack(Pieces piece, U64 pieceBB);
-	void findCheckingPieces(CheckingPieces &cp, bool side);
-	void generateWhiteMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces);
-	void generateBlackMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces);
-	int generateLegalMoves(MoveList& moveList);
-
+	void findCheckingPieces(CheckingPieces& cp, bool side);
+	void initAttackArrs();
+	void setBoard(std::string FEN = defaultFEN);
 	void placePiece(Pieces piece, int pos);
-	void makeMove(Move move);
-
 	U64 getEmpty();
-	U64 getBitboard(int index);
-	U64 getBitboard(Pieces index);
 	U64 getEnemy(Pieces piece);
-	bool isWhiteTurn();
-	bool isEmpty(Pieces piece);
 	int getCastlingRight(CastlingRights right);
-
-	void setWhiteTurn(bool turn);
 	void changeTurn();
 	void removeCastlingRight(CastlingRights right);
 	void setCastlingRight(CastlingRights right);
+public:
+	Board copy(); //copy of itself
+	void init();
+
+	void printBB(U64 bb);
+	bool isEmpty(Pieces piece);
+	Pieces getPiece(int pos);
+	void makeMove(Move move);
+	void unMakeMove(Board board);
+	void setWhiteTurn(bool turn);
+	U64 getBitboard(int index);
+	U64 getBitboard(Pieces index);
+	bool isWhiteTurn();
+	bool isCheck();
+	bool isCheckmate(int moveListCount);
+	bool isDraw(int moveListCount);
+	bool isStalemate(int moveListCount);
+	bool isDrawByMaterial();
+	bool fiftyMoveRule();
+	bool threeFoldRepetitionRule();
+	int generateLegalMoves(MoveList& moveList);
 
 	std::string saveBoardToFen();
-	void printBB(U64 bb);
+
+	int negaMax(int depth);
+	Move rootNegaMax(int depth);
+	int evaluate();
+	int countMaterial(int color);
 };

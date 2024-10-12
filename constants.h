@@ -1,5 +1,23 @@
 #pragma once
+#include <SFML/Graphics.hpp>
 #include <iostream>
+
+const int WIN_WIDTH = 800, WIN_HEIGHT = 800;
+const int ROWS = 8, COLS = 8;
+const int SIDE = WIN_WIDTH / ROWS;
+
+const sf::Color WHITE(255, 255, 255);
+const sf::Color BLACK(128, 128, 128);
+const sf::Color HIGHLIGHTED_WHITE(175, 155, 175);
+const sf::Color HIGHLIGHTED_BLACK(88, 88, 98);
+
+enum Mode { AI, MULTIPLAYER };
+
+struct Settings
+{
+	Mode mode = AI;
+	bool whiteTurn = true;
+};
 
 typedef std::uint64_t U64;
 

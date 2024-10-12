@@ -5,6 +5,17 @@
 #include "kingMoves.h"
 #include "slidingPieceMoves.h"
 
+Board Board::copy()
+{
+	return *this;
+}
+
+void Board::init()
+{
+	setBoard();
+	initAttackArrs();
+}
+
 U64 northOne(U64 b) { return b >> 8; }
 U64 southOne(U64 b) { return b << 8; }
 U64 eastOne(U64 b) { return (b & notHFile) << 1; }
@@ -20,12 +31,11 @@ U64 inBetween(int from, int to) {
 	return inBetweenArr[from][to];
 }
 
-#pragma warning(disable:4146)
 U64 calcInBetween(int sq1, int sq2) {
-	const U64 m1 = -1ULL;
+	const U64 m1 = -1;
 	const U64 a2a7 = 0x0001010101010100ULL;
 	const U64 b2g7 = 0x0040201008040200ULL;
-	const U64 h1b7 = 0x0002040810204080ULL; /* Thanks Dustin, g2b7 did not work for c1-a3 */
+	const U64 h1b7 = 0x0002040810204080ULL;
 	U64 btwn, line, rank, file;
 
 	btwn = (m1 << sq1) ^ (m1 << sq2);
@@ -35,7 +45,7 @@ U64 calcInBetween(int sq1, int sq2) {
 	line += 2 * (((rank & 7) - 1) >> 58); /* b1g1 if same rank */
 	line += (((rank - file) & 15) - 1) & b2g7; /* b2g7 if same diagonal */
 	line += (((rank + file) & 15) - 1) & h1b7; /* h1b7 if same antidiag */
-	line *= btwn & -btwn; /* mul acts like shift by smaller square */
+	line *= btwn & -1*btwn; /* mul acts like shift by smaller square */
 	return line & btwn;   /* return the bits on that line in-between */
 }
 
@@ -92,46 +102,33 @@ bool Board::isCheck()
 
 bool Board::isCheckmate(int moveListCount)
 {
-	if (isCheck() && !moveListCount)
-		return true;
-	return false;
+	return !moveListCount && isCheck();
 }
 
 bool Board::isStalemate(int moveListCount)
 {
-	if (!moveListCount && !isCheck())
-		return true;
-	return false;
+	return !moveListCount && !isCheck();
 }
 
-bool Board::isDrawByMaterial()
+bool Board::isDraw(int moveListCount) // not sure about fifty move rule if it can be evalueted immediatly as draw, there is also some fide rule
 {
-	/*U64 occ = occupied;
-	int count = 0;
-	while (occ) {
-		if (bitScanForwardWithReset(occ))
-			count++;
-	}
-	if (count == 2)
-		return true;
-	if (count == 3) {
-		if (bitScanForward(bb[wBishop] | bb[wKnight]))
-			return true;
-		if (bitScanForward(bb[bBishop] | bb[bKnight]))
-			return true;
-	}
-	if (count == 4) { // bishops must be on same color square
-		int pos1 = bitScanForward(bb[wBishop]);
-		int pos2 = bitScanForward(bb[bBishop]);
-		if ((pos1 / 8 + pos1 % 8) % 2 == (pos2 / 8 + pos2 % 8) % 2)
-			return true;
-	}*/
+	return fiftyMoveRule() || threeFoldRepetitionRule() || isStalemate(moveListCount) || isDrawByMaterial();
+}
+
+bool Board::isDrawByMaterial() // https://www.chessprogramming.org/Draw_Evaluation https://www.chessprogramming.org/Interior_Node_Recognizer
+{
 	return false;
 }
 
 bool Board::fiftyMoveRule()
 {
 	return (halfMoveClock >= 100) ? true : false;
+}
+
+bool Board::threeFoldRepetitionRule()
+{
+	// https://www.chessprogramming.org/Repetitions
+	return false;
 }
 
 U64 Board::checkedSquares(bool side)
@@ -261,27 +258,31 @@ U64 Board::getPieceAttackingKingDirectAttack(Pieces piece, U64 pieceBB)
 	switch (piece + whiteTurn) {
 	case wRook:
 		attack = fileAttacks(occupied, king);
-		return (attack & pieceBB) ? attack: lineAttacks(occupied, king);
+		if (attack & pieceBB)
+			return attack & (fileAttacks(occupied, from) | pieceBB);
+		return lineAttacks(occupied, king) & (lineAttacks(occupied, from) | pieceBB);
 	case wBishop:
 		attack = diagonalAttacks(occupied, king);
-		return (attack & pieceBB) ? attack : antiDiagAttacks(occupied, king);
+		if (attack & pieceBB)
+			return attack & (diagonalAttacks(occupied, from) | pieceBB);
+		return antiDiagAttacks(occupied, king) & (antiDiagAttacks(occupied, from) | pieceBB);
 	case wQueen:
 		attack = fileAttacks(occupied, king);
 		if (attack & pieceBB)
-			return attack;
+			return attack & (fileAttacks(occupied, from) | pieceBB);
 		attack = lineAttacks(occupied, king);
 		if (attack & pieceBB)
-			return attack;
+			return attack & (lineAttacks(occupied, from) | pieceBB);
 		attack = diagonalAttacks(occupied, king);
 		if (attack & pieceBB)
-			return attack;
+			return attack & (diagonalAttacks(occupied, from) | pieceBB);
 		attack = antiDiagAttacks(occupied, king);
 		if (attack & pieceBB)
-			return attack;
+			return attack & (antiDiagAttacks(occupied, from) | pieceBB);
 	}
 }
 
-void Board::generateWhiteMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
+void Board::generateWhiteMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces)
 {
 	getWhitePawnMoves(moveList, checkingPieces, pinnedPieces);
 	getKnightMoves(wKnight, moveList, checkingPieces, pinnedPieces);
@@ -291,7 +292,7 @@ void Board::generateWhiteMoves(MoveList& moveList, CheckingPieces checkingPieces
 	getQueenMoves(wQueen, moveList, checkingPieces, pinnedPieces);
 }
 
-void Board::generateBlackMoves(MoveList& moveList, CheckingPieces checkingPieces, PinnedPieces pinnedPieces)
+void Board::generateBlackMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces)
 {
 	getBlackPawnMoves(moveList, checkingPieces, pinnedPieces);
 	getKnightMoves(bKnight, moveList, checkingPieces, pinnedPieces);
@@ -311,27 +312,27 @@ int Board::generateLegalMoves(MoveList& moveList)
 	if (!checkingPieces.count) {
 		checkingPieces.bb = ~0;
 		if (whiteTurn)
-			generateWhiteMoves(moveList, checkingPieces, pinnedPieces);
+			generateWhiteMoves(moveList, checkingPieces.bb, pinnedPieces);
 		else
-			generateBlackMoves(moveList, checkingPieces, pinnedPieces);
+			generateBlackMoves(moveList, checkingPieces.bb, pinnedPieces);
 	}
 	else if (checkingPieces.count == 1) {
 		if (whiteTurn) {
 			if (checkingPieces.piece == bKnight || checkingPieces.piece == bPawn) {
-				generateWhiteMoves(moveList, checkingPieces, pinnedPieces);
+				generateWhiteMoves(moveList, checkingPieces.bb, pinnedPieces);
 			}
 			else {
 				checkingPieces.bb |= getPieceAttackingKingDirectAttack(checkingPieces.piece, checkingPieces.bb);
-				generateWhiteMoves(moveList, checkingPieces, pinnedPieces);
+				generateWhiteMoves(moveList, checkingPieces.bb, pinnedPieces);
 			}
 		}
 		else {
 			if (checkingPieces.piece == wKnight || checkingPieces.piece == wPawn) {
-				generateBlackMoves(moveList, checkingPieces, pinnedPieces);
+				generateBlackMoves(moveList, checkingPieces.bb, pinnedPieces);
 			}
 			else {
 				checkingPieces.bb |= getPieceAttackingKingDirectAttack(checkingPieces.piece, checkingPieces.bb);
-				generateBlackMoves(moveList, checkingPieces, pinnedPieces);
+				generateBlackMoves(moveList, checkingPieces.bb, pinnedPieces);
 			}
 		}
 	}
@@ -341,21 +342,41 @@ int Board::generateLegalMoves(MoveList& moveList)
 	return moveList.count;
 }
 
+void Board::removeRooksCastlingRights(int rook, int pos)
+{
+	if (rook == wRook) {
+		if (pos == 56)
+			removeCastlingRight(wQueenSide);
+		else if (pos == 63)
+			removeCastlingRight(wKingSide);
+	}
+	else if (rook == bRook) {
+		if (pos == 0)
+			removeCastlingRight(bQueenSide);
+		else if (pos == 7)
+			removeCastlingRight(bKingSide);
+	}
+}
+
 void Board::makeMove(Move move)
 {
 	Pieces piece = (Pieces)move.getPiece();
 	int pieceColor = move.getPieceColor();
 	int pieceGroup = move.getPieceGroup();
+	int captureGroup = Whites - pieceColor;
 	U64 from = 1ULL << move.getFrom();
 	U64 to = 1ULL << move.getTo();
 	U64 fromTo = from | to;
 	bb[piece] ^= fromTo;
 	bb[pieceGroup] ^= fromTo;
 	if (move.isCapture()) {
-		bb[move.getCapturedPiece()] ^= to;
-		bb[move.getCaptureGroup()] ^= to;
+		int capture = move.getCapturedPiece();
+		bb[capture] ^= to;
+		bb[captureGroup] ^= to;
 		occupied ^= from;
+		piecesCount[capture]--;
 		halfMoveClock = 0;
+		removeRooksCastlingRights(capture, move.getTo());
 	}
 	else {
 		occupied ^= fromTo;
@@ -365,25 +386,16 @@ void Board::makeMove(Move move)
 			halfMoveClock++;
 	}
 
-	switch (piece) {
-	case wKing:
+	removeRooksCastlingRights(piece, move.getFrom());
+	if (piece == wKing) {
 		removeCastlingRight(wKingSide);
 		removeCastlingRight(wQueenSide);
-		break;
-	case bKing:
-		removeCastlingRight(bKingSide);
-		removeCastlingRight(bQueenSide);
-		break;
-	case wRook:
-		removeCastlingRight(wQueenSide);
-		removeCastlingRight(wKingSide);
-		break;
-	case bRook:
-		removeCastlingRight(bQueenSide);
-		removeCastlingRight(bKingSide);
-		break;
 	}
-
+	else if (piece == bKing) {
+		removeCastlingRight(bKingSide);
+		removeCastlingRight(bQueenSide);
+	}
+ 
 	switch (move.getSpecialMove()) {
 	case DOUBLE_PUSH:
 		enPassantSquare = move.getTo();
@@ -406,25 +418,30 @@ void Board::makeMove(Move move)
 		break;
 	case EN_PASSANT:
 		to = 1ULL << ((move.getTo() < 32) ? move.getTo() + 8 : move.getTo() - 8);
-		bb[pieceColor::getOpponentGroup(piece)] ^= to;
+		bb[captureGroup] ^= to;
 		bb[wPawn - pieceColor] ^= to;
 		occupied ^= to;
+		piecesCount[bPawn + pieceColor]--;
 		break;
 	case BISHOP_PROM:
 		bb[piece] ^= to;
 		bb[bBishop + pieceColor] ^= to;
+		piecesCount[bBishop + pieceColor]++;
 		break;
 	case KNIGHT_PROM:
 		bb[piece] ^= to;
 		bb[bKnight + pieceColor] ^= to;
+		piecesCount[bKnight + pieceColor]++;
 		break;
 	case ROOK_PROM:
 		bb[piece] ^= to;
 		bb[bRook + pieceColor] ^= to;
+		piecesCount[bRook + pieceColor]++;
 		break;
 	case QUEEN_PROM:
 		bb[piece] ^= to;
 		bb[bQueen + pieceColor] ^= to;
+		piecesCount[bQueen + pieceColor]++;
 		break;
 	}
 	if (move.getSpecialMove() != DOUBLE_PUSH) {
@@ -433,6 +450,11 @@ void Board::makeMove(Move move)
 	if (!whiteTurn)
 		fullMoveCounter++;
 	changeTurn();
+}
+
+void Board::unMakeMove(Board board)
+{
+	*this = board;
 }
 
 void Board::initAttackArrs()
@@ -484,6 +506,7 @@ void Board::placePiece(Pieces piece, int pos)
 	bb[piece] |= 1ULL << pos;
 	bb[Blacks + pieceColor::getPieceColor(piece)] |= 1ULL << pos;
 	occupied ^= 1ULL << pos;
+	piecesCount[piece]++;
 }
 
 void Board::setBoard(std::string FEN)
