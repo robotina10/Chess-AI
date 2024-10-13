@@ -1,5 +1,7 @@
 #include "draw.h"
 
+const std::vector<std::string> pieceTypes = { "bk", "wk", "bq", "wq", "br", "wr", "bb", "wb", "bn", "wn", "bp", "wp" };
+
 void drawPieces(sf::RenderWindow& win, Board &board, bool whiteView)
 {
 	for (int pieceIndex = 0; pieceIndex < pieceTypes.size(); pieceIndex++) {

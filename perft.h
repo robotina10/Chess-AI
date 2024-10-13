@@ -1,6 +1,5 @@
 #pragma once
 #include <chrono>
-#include <thread>
 #include "board.h"
 
 using namespace std::chrono;
@@ -20,13 +19,13 @@ long long Perft(Board board, int depth, int maxDepth)
 	for (int i = 0; i < moveList.count; i++) {
 		board.makeMove(moveList.moves[i]);
 		long long c = Perft(board, depth - 1, maxDepth);
+		board.unMakeMove(b);
 		if (depth == maxDepth) {
 			moveList.moves[i].printMove();
 			std::cout << c << "\n";
 		}
 		count += c;
 		//count += Perft(board, depth - 1, maxDepth);
-		board.unMakeMove(b);
 	}
 	return count;
 }

@@ -51,10 +51,10 @@ void Board::getKingMoves(Pieces king, MoveList& moveList)
 	while (attack) {
 		int to = bitScanForwardWithReset(attack);
 		if ((1ULL << to) & occupied) {
-			moveList.moves[moveList.count++] = Move(from, to, king, getPiece(to), NONE);
+			moveList.moves[moveList.count++] = Move(from, to, king, getPiece(to), EMPTY);
 		}
 		else {
-			moveList.moves[moveList.count++] = Move(from, to, king, EMPTY, NONE);
+			moveList.moves[moveList.count++] = Move(from, to, king, EMPTY, EMPTY);
 		}
 	}
 	getCastlingMoves(king, moveList);

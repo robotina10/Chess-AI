@@ -145,7 +145,7 @@ void Board::getMovesFromPawnCaptureBB(MoveList& moveList, U64 bb, Pieces piece, 
 			moveList.moves[moveList.count++] = move;
 		}
 		else {
-			move = { to + captureDistance, to, piece, capturedPiece, NONE };
+			move = { to + captureDistance, to, piece, capturedPiece, EMPTY };
 			moveList.moves[moveList.count++] = move;
 		}
 	}

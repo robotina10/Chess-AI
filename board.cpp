@@ -285,21 +285,21 @@ U64 Board::getPieceAttackingKingDirectAttack(Pieces piece, U64 pieceBB)
 void Board::generateWhiteMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces)
 {
 	getWhitePawnMoves(moveList, checkingPieces, pinnedPieces);
+	getQueenMoves(wQueen, moveList, checkingPieces, pinnedPieces);
+	getRookMoves(wRook, moveList, checkingPieces, pinnedPieces);
 	getKnightMoves(wKnight, moveList, checkingPieces, pinnedPieces);
 	getKingMoves(wKing, moveList);
-	getRookMoves(wRook, moveList, checkingPieces, pinnedPieces);
 	getBishopMoves(wBishop, moveList, checkingPieces, pinnedPieces);
-	getQueenMoves(wQueen, moveList, checkingPieces, pinnedPieces);
 }
 
 void Board::generateBlackMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces)
 {
 	getBlackPawnMoves(moveList, checkingPieces, pinnedPieces);
+	getQueenMoves(bQueen, moveList, checkingPieces, pinnedPieces);
+	getRookMoves(bRook, moveList, checkingPieces, pinnedPieces);
 	getKnightMoves(bKnight, moveList, checkingPieces, pinnedPieces);
 	getKingMoves(bKing, moveList);
-	getRookMoves(bRook, moveList, checkingPieces, pinnedPieces);
 	getBishopMoves(bBishop, moveList, checkingPieces, pinnedPieces);
-	getQueenMoves(bQueen, moveList, checkingPieces, pinnedPieces);
 }
 
 int Board::generateLegalMoves(MoveList& moveList)
@@ -471,7 +471,7 @@ U64 Board::getBitboard(int index) { return bb[index]; }
 U64 Board::getBitboard(Pieces index) { return bb[index]; }
 U64 Board::getEnemy(Pieces piece) { return bb[pieceColor::getOpponentGroup(piece)]; }
 bool Board::isWhiteTurn() { return whiteTurn; }
-bool Board::isEmpty(Pieces piece) { return piece == EMPTY; }
+bool Board::isEmpty(int pos) { return getEmpty() & (1ULL << pos); }
 
 int Board::getCastlingRight(CastlingRights right) { return castlingRights & right; }
 

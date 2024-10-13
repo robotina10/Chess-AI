@@ -1,5 +1,5 @@
 #include "game.h"
-//Button promotionSelectionBtn("img/prom.png");
+#include "perft.h"
 
 sf::SoundBuffer soundCaptureBuffer;
 sf::SoundBuffer soundMoveBuffer;
@@ -14,19 +14,15 @@ void initSounds()
 
 void Game::init()
 {
-    //std::thread perftThread(getPerftWithTime, chess.board, 6);
     initSounds();
 }
 
 void Game::startGame()
 {
     init();
+    //std::thread perftThread(getPerftWithTime, chess.board, 5);
     chess.board.generateLegalMoves(chess.moveList);
-    bool isPressed = false;
-    bool mouseMoved = false;
-    int from = -1;
-    Pieces selectedPiece = EMPTY;
-
+;
     while (win.isOpen())
     {
         sf::Event event;
@@ -38,93 +34,96 @@ void Game::startGame()
                 break;
             case sf::Event::MouseButtonPressed:
             {
-                isPressed = true;
-                if (from == -1) {
-                    from = calcSquarePos(sf::Mouse::getPosition(win));
-                    selectedPiece = chess.board.getPiece(from);
+                moveInfo.isPressed = true;
+                if (moveInfo.from == -1) {
+                    moveInfo.from = calcSquarePos(sf::Mouse::getPosition(win));
                     continue;
                 }
-                int to = calcSquarePos(sf::Mouse::getPosition(win));
-                int moveIndex = getMoveIndex(from, to);
-                if (moveIndex == -1) {
-                    from = to;
+                moveInfo.to = calcSquarePos(sf::Mouse::getPosition(win));
+                moveInfo.moveIndex = getMoveIndex();
+                if (moveInfo.moveIndex == -1) {
+                    moveInfo.from = moveInfo.to;
+                    continue;
                 }
-                else {
-                    SpecialMove promotion = NONE;
-                    if (chess.moveList.moves[moveIndex].isPromotion()) {
+                if (chess.moveList.moves[moveInfo.moveIndex].isPromotion()) {
+                    //promotionSelectionBtn.drawAndDisplay(window);
+                    while (true) {
                         //promotionSelectionBtn.drawAndDisplay(window);
-                        while (true) {
-                            //promotionSelectionBtn.drawAndDisplay(window);
-                            while (win.pollEvent(event))
-                            {
-                                switch (event.type) {
-                                case sf::Event::Closed:
-                                    win.close();
-                                    break;
-                                case sf::Event::MouseButtonPressed:
-                                    //promotion = promotionSelectionBtn.pieceClicked(calcSquarePos(sf::Mouse::getPosition(window), whiteView));
-                                    break;
-                                }
-                            }
-                            if (promotion)
+                        while (win.pollEvent(event))
+                        {
+                            switch (event.type) {
+                            case sf::Event::Closed:
+                                win.close();
                                 break;
+                            case sf::Event::MouseButtonPressed:
+                                moveInfo.promotion = QUEEN_PROM;
+                                //promotion = promotionSelectionBtn.pieceClicked(calcSquarePos(sf::Mouse::getPosition(window), whiteView));
+                                break;
+                            }
                         }
+                        if (moveInfo.promotion)
+                            break;
                     }
-                    makeMove(from, to, selectedPiece, moveIndex, promotion); // why window etc
-                    playSound(MOVE_SOUND);
+                }
+                makeMove();
+                playSound(Sounds::MOVE_SOUND);
+                switch (chess.gameState()) {
+                case DRAW:
+                    std::cout << "DRAW\n";
+                    break;
+                case WHITE_WIN:
+                    std::cout << "WHITE_WIN\n";
+                    break;
+                case BLACK_WIN:
+                    std::cout << "BLACK_WIN\n";
+                    break;
+                }
 
-                    switch (settings.mode) {
-                    case AI:
-                        //computer(chess);
-                        break;
-                    }
+                switch (settings.mode) {
+                case AI:
+                    computer();
+                    break;
+                }
 
-                    switch (chess.gameState()) {
-                    case DRAW:
-                        std::cout << "DRAW\n";
-                        break;
-                    case WHITE_WIN:
-                        std::cout << "WHITE_WIN\n";
-                        break;
-                    case BLACK_WIN:
-                        std::cout << "BLACK_WIN\n";
-                        break;
-                    }
+                switch (chess.gameState()) {
+                case DRAW:
+                    std::cout << "DRAW\n";
+                    break;
+                case WHITE_WIN:
+                    std::cout << "WHITE_WIN\n";
+                    break;
+                case BLACK_WIN:
+                    std::cout << "BLACK_WIN\n";
+                    break;
                 }
                 break;
             }
             case sf::Event::MouseButtonReleased:
-                isPressed = false;
-                mouseMoved = false;
+                moveInfo.isPressed = false;
+                moveInfo.mouseMoved = false;
                 //makeMove(window, chess, from , selectedPiece);
                 break;
             case sf::Event::MouseMoved:
-                if (!isPressed || chess.board.isEmpty(selectedPiece))
+                if (!moveInfo.isPressed || chess.board.isEmpty(moveInfo.from))
                     continue;
-                mouseMoved = true;
+                moveInfo.mouseMoved = true;
                 sf::Vector2i pos = sf::Mouse::getPosition(win);
-                dragPiece(win, chess.board, pos, calcSquarePos(pos), selectedPiece);
+                //dragPiece(win, chess.board, pos, calcSquarePos(pos), moveInfo.selectedPiece);
                 break;
             }
         }
-        draw(win, chess, from, settings.whiteTurn);
+        draw(win, chess, moveInfo.from, settings.whiteTurn);
     }
-}
-
-void Game::setSettings(Settings settings)
-{
-    chess.board.setWhiteTurn(settings.whiteTurn);
-
 }
 
 void Game::playSound(Sounds soundType)
 {
     sf::Sound sound;
-    if (soundType == CAPTURE_SOUND) {
+    if (soundType == Sounds::CAPTURE_SOUND) {
         sound.setBuffer(soundCaptureBuffer);
         sound.play();
     }
-    else if (soundType == MOVE_SOUND) {
+    else if (soundType == Sounds::MOVE_SOUND) {
         sound.setBuffer(soundMoveBuffer);
         sound.play();
     }
@@ -147,34 +146,34 @@ int Game::calcSquarePos(sf::Vector2i p)
     return 63 - (p.x + p.y * 8);
 }
 
-int Game::getMoveIndex(int from, int to)
+int Game::getMoveIndex()
 {
     for (int i = 0; i < chess.moveList.count; i++) {
-        if (from == chess.moveList.moves[i].getFrom() && to == chess.moveList.moves[i].getTo()) {
+        if (moveInfo.from == chess.moveList.moves[i].getFrom() && moveInfo.to == chess.moveList.moves[i].getTo())
             return i;
-        }
     }
     return -1;
 }
 
-void Game::makeMove(int &from, int to, Pieces &piece, int moveIndex, SpecialMove promotion)
+void Game::makeMove()
 {
-    Move move = chess.moveList.moves[moveIndex];
+    Move move = chess.moveList.moves[moveInfo.moveIndex];
     if (move.isPromotion()) {
-        move.setPromotion(promotion);
+        move.setPromotion(moveInfo.promotion);
+        moveInfo.promotion = NONE;
     }
     chess.gamePositions.push_back(chess.board);
     chess.board.makeMove(move);
     chess.moveList.count = 0;
     chess.board.generateLegalMoves(chess.moveList);
-    piece = EMPTY;
-    from = -1;
+    moveInfo.from = -1;
+    moveInfo.to = -1;
 }
 
 void Game::computer()
 {
     chess.gamePositions.push_back(chess.board);
-    chess.board.makeMove(chess.board.rootNegaMax(3));
+    chess.board.makeMove(chess.board.searchRoot(5));
     chess.moveList.count = 0;
     chess.board.generateLegalMoves(chess.moveList);
 }

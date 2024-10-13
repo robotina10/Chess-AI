@@ -1,3 +1,6 @@
+#pragma once
+#include <stdlib.h>  
+#include <time.h> 
 #include "mainMenu.h"
 
 const sf::Color textCol(58, 58, 58);
@@ -6,7 +9,7 @@ MainMenu::MainMenu(sf::RenderWindow& win) : win(win),
 	colorBtn("Choose color", font, { 0, 200 }, 25, textCol),
 	whiteBtn("img/wk.png", { 0, 260 }, 1, 1),
 	blackBtn("img/bk.png", { 0, 260 }, 1, 1),
-	//randomBtn(),
+	randomBtn("img/random.png", { 0, 260 }, 1, 1),
 	multiplayerBtn("MULTIPLAYER", font, { 0, 350 }, 25, textCol),
 	computerBtn("COMPUTER", font, { 0, 420 }, 25, textCol),
 	playBtn("PLAY", font, { 0, 490 }, 25, textCol)
@@ -28,7 +31,9 @@ void MainMenu::setupButtons()
 	float x = colorBtn.getPos().x;
 	whiteBtn.setRect({x, 0}, {0, 0}, fillCol, outlineThickness, outlineCol);
 	x = whiteBtn.getPos().x + whiteBtn.getSize().x;
-	blackBtn.setRect({ x + 20, 0 }, { 0, 0 }, fillCol, outlineThickness, outlineCol);
+	blackBtn.setRect({ x + 10, 0 }, { 0, 0 }, fillCol, outlineThickness, outlineCol);
+	x = blackBtn.getPos().x + whiteBtn.getSize().x;
+	randomBtn.setRect({ x + 10, 0 }, { 0, 0 }, fillCol, outlineThickness, outlineCol);
 	multiplayerBtn.setRect({ -10, -10 }, { 20, 20 }, fillCol, outlineThickness, outlineCol, true);
 	computerBtn.setRect({ -10, -10 }, { 20, 20 }, fillCol, outlineThickness, outlineCol, true);
 	playBtn.setRect({ -10, -10 }, { 20, 20 }, fillCol, outlineThickness, outlineCol, true);
@@ -36,6 +41,8 @@ void MainMenu::setupButtons()
 
 void MainMenu::run()
 {
+	srand(time(0));
+
 	while (win.isOpen()) 
 	{
 		sf::Event event;
@@ -54,6 +61,10 @@ void MainMenu::run()
 					settings.whiteTurn = false;
 				}
 				else if (randomBtn.isClicked(pos)) {
+					if (rand() % 10 < 5)
+						settings.whiteTurn = true;
+					else
+						settings.whiteTurn = false;
 				}
 				else if (multiplayerBtn.isClicked(pos)) {
 					settings.mode = MULTIPLAYER;
@@ -76,7 +87,7 @@ void MainMenu::draw()
 	win.draw(colorBtn);
 	win.draw(whiteBtn);
 	win.draw(blackBtn);
-	//win.draw(randomBtn);
+	win.draw(randomBtn);
 	win.draw(multiplayerBtn);
 	win.draw(computerBtn);
 	win.draw(playBtn);

@@ -36,9 +36,9 @@ void Board::getKnightMoves(Pieces knight, MoveList &moveList, U64 checkingPieces
 			int to = bitScanForwardWithReset(attack);
 			Move move;
 			if ((1ULL << to) & occupied)
-				move = { from, to, knight, getPiece(to), NONE };
+				move = { from, to, knight, getPiece(to), EMPTY };
 			else
-				move = { from, to, knight, EMPTY, NONE };
+				move = { from, to, knight, EMPTY, EMPTY };
 			moveList.moves[moveList.count++] = move;
 		}
 	}

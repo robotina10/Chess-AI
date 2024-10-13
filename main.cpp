@@ -16,8 +16,7 @@ int main()
     MainMenu mainMenu(win);
     mainMenu.run();
 
-    Game game(win);
-    game.setSettings(mainMenu.getSettings());
+    Game game(win, mainMenu.getSettings());
     game.startGame();
 
     return 0;

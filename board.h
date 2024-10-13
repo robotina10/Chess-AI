@@ -19,8 +19,8 @@ struct PinnedPieces
 	std::map<U64, U64> map;
 };
 
-const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-//const std::string defaultFEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - "; // perft 5: 193690690
+//const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const std::string defaultFEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - "; // perft 5: 193690690
 
 const U64 notAFile = ~0x0101010101010101;
 const U64 notHFile = ~0x8080808080808080;
@@ -88,7 +88,7 @@ public:
 	void init();
 
 	void printBB(U64 bb);
-	bool isEmpty(Pieces piece);
+	bool isEmpty(int pos);
 	Pieces getPiece(int pos);
 	void makeMove(Move move);
 	void unMakeMove(Board board);
@@ -107,8 +107,12 @@ public:
 
 	std::string saveBoardToFen();
 
-	int negaMax(int depth);
-	Move rootNegaMax(int depth);
+	int alphaBeta(int alpha, int beta, int depthLeft);
+	Move searchRoot(int depth);
+	int generateLegalCapturesOnly(MoveList& moveList);
+	int quiesce(int alpha, int beta);
 	int evaluate();
 	int countMaterial(int color);
+	int countMobilityScore(int color);
+	void orderMoves(MoveList& moveList);
 };

@@ -66,7 +66,6 @@ void Move::setPromotion(int promotionPiece) // can be done maybe better
 void Move::printMove()
 {
 	const char files[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h' };
-	//std::cout << "From: " << getFrom() << " To: " << getTo() << "\n";
 	if (isPromotion()) {
 		if (getSpecialMove() == QUEEN_PROM)
 			std::cout << files[getFrom() % 8] << 8 - getFrom() / 8 << files[getTo() % 8] << 8 - getTo() / 8 << "q: ";
