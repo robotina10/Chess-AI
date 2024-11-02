@@ -43,7 +43,7 @@ void Board::getCastlingMoves(Pieces king, MoveList& moveList)
 	}
 }
 
-void Board::getKingMoves(Pieces king, MoveList& moveList)
+void Board::getKingMoves(Pieces king, MoveList& moveList, bool capturesOnly)
 {
 	int from = bitScanForward(bb[king]);
 	U64 attack = kingAttacks[from] & (getEmpty() | getEnemy(king));
@@ -53,9 +53,10 @@ void Board::getKingMoves(Pieces king, MoveList& moveList)
 		if ((1ULL << to) & occupied) {
 			moveList.moves[moveList.count++] = Move(from, to, king, getPiece(to), EMPTY);
 		}
-		else {
+		else if (!capturesOnly) {
 			moveList.moves[moveList.count++] = Move(from, to, king, EMPTY, EMPTY);
 		}
 	}
-	getCastlingMoves(king, moveList);
+	if (!capturesOnly)
+		getCastlingMoves(king, moveList);
 }

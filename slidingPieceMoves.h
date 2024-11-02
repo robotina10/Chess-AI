@@ -80,7 +80,7 @@ U64 Board::bishopAttack(int from, U64 occupied)
 	return diagonalAttacks(occupied, from) | antiDiagAttacks(occupied, from);
 }
 
-void Board::getRookMoves(Pieces rook, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces)
+void Board::getRookMoves(Pieces rook, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly)
 {
 	U64 rooks = bb[rook];
 	while (rooks) {
@@ -96,15 +96,14 @@ void Board::getRookMoves(Pieces rook, MoveList& moveList, U64 checkingPieces, Pi
 			int to = bitScanForwardWithReset(attack);
 			Move move;
 			if ((1ULL << to) & occupied)
-				move = { from, to, rook, getPiece(to), EMPTY };
-			else
-				move = { from, to, rook, EMPTY, EMPTY };
-			moveList.moves[moveList.count++] = move;
+				moveList.moves[moveList.count++] = { from, to, rook, getPiece(to), EMPTY };
+			else if (!capturesOnly)
+				moveList.moves[moveList.count++] = { from, to, rook, EMPTY, EMPTY };
 		}
 	}
 }
 
-void Board::getBishopMoves(Pieces bishop, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces)
+void Board::getBishopMoves(Pieces bishop, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly)
 {
 	U64 bishops = bb[bishop];
 	while (bishops) {
@@ -120,15 +119,14 @@ void Board::getBishopMoves(Pieces bishop, MoveList& moveList, U64 checkingPieces
 			int to = bitScanForwardWithReset(attack);
 			Move move;
 			if ((1ULL << to) & occupied)
-				move = { from, to, bishop, getPiece(to), EMPTY };
-			else
-				move = { from, to, bishop, EMPTY, EMPTY };
-			moveList.moves[moveList.count++] = move;
+				moveList.moves[moveList.count++] = { from, to, bishop, getPiece(to), EMPTY };
+			else if (!capturesOnly)
+				moveList.moves[moveList.count++] = { from, to, bishop, EMPTY, EMPTY };
 		}
 	}
 }
 
-void Board::getQueenMoves(Pieces queen, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces)
+void Board::getQueenMoves(Pieces queen, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly)
 {
 	U64 queens = bb[queen];
 	while (queens) {
@@ -144,10 +142,9 @@ void Board::getQueenMoves(Pieces queen, MoveList& moveList, U64 checkingPieces, 
 			int to = bitScanForwardWithReset(attack);
 			Move move;
 			if ((1ULL << to) & occupied)
-				move = { from, to, queen, getPiece(to), EMPTY };
-			else
-				move = { from, to, queen, EMPTY, EMPTY };
-			moveList.moves[moveList.count++] = move;
+				moveList.moves[moveList.count++] = { from, to, queen, getPiece(to), EMPTY };
+			else if (!capturesOnly)
+				moveList.moves[moveList.count++] = { from, to, queen, EMPTY, EMPTY };
 		}
 	}
 }

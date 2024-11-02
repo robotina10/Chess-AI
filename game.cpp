@@ -85,7 +85,7 @@ void Game::startGame()
                     break;
                 }
 
-                switch (chess.gameState()) {
+                switch (chess.gameState()) { // duplicate make func
                 case DRAW:
                     std::cout << "DRAW\n";
                     break;
@@ -173,7 +173,7 @@ void Game::makeMove()
 void Game::computer()
 {
     chess.gamePositions.push_back(chess.board);
-    chess.board.makeMove(chess.board.searchRoot(5));
+    chess.board.makeMove(chess.board.searchRoot(2));
     chess.moveList.count = 0;
     chess.board.generateLegalMoves(chess.moveList);
 }

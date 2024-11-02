@@ -19,8 +19,9 @@ struct PinnedPieces
 	std::map<U64, U64> map;
 };
 
-//const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const std::string defaultFEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - "; // perft 5: 193690690
+//const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/q/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+//const std::string defaultFEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - "; // perft 5: 193690690
+const std::string defaultFEN = "4k3/8/8/8/q/8/PPP4/4K3 w KQkq - 0 1";
 
 const U64 notAFile = ~0x0101010101010101;
 const U64 notHFile = ~0x8080808080808080;
@@ -50,21 +51,21 @@ class Board {
 	int halfMoveClock = 0;
 	int fullMoveCounter = 1;
 
-	void getPawnPushCapturesMoves(int color, MoveList& moveList, U64 pawns, U64 empty, U64 checkingPieces);
+	void getPawnPushCapturesMoves(int color, MoveList& moveList, U64 pawns, U64 empty, U64 checkingPieces, bool capturesOnly);
 	void getMovesFromPawnCaptureBB(MoveList& moveList, U64 bb, Pieces piece, int captureDistance);
 	void getMovesFromPushBB(MoveList& moveList, U64 bb, Pieces piece, int pushDistance, SpecialMove doublePush);
 	void getEnPassantMoves(MoveList& moveList, U64 bb, Pieces piece, int dir);
 	void removeRooksCastlingRights(int rook, int pos);
-	void getKnightMoves(Pieces knight, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
-	void getKingMoves(Pieces king, MoveList& moveList);
-	void getRookMoves(Pieces rook, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
-	void getBishopMoves(Pieces bishop, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
-	void getQueenMoves(Pieces queen, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
+	void getKnightMoves(Pieces knight, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly);
+	void getKingMoves(Pieces king, MoveList& moveList, bool capturesOnly);
+	void getRookMoves(Pieces rook, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly);
+	void getBishopMoves(Pieces bishop, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly);
+	void getQueenMoves(Pieces queen, MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly);
 	void getCastlingMoves(Pieces king, MoveList& moveList);
-	void getWhitePawnMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
-	void getBlackPawnMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
-	void generateWhiteMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
-	void generateBlackMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces);
+	void getWhitePawnMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly);
+	void getBlackPawnMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly);
+	void generateWhiteMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly);
+	void generateBlackMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly);
 	U64 rookAttack(int from, U64 occupied);
 	U64 bishopAttack(int from, U64 occupied);
 	bool attacked(int to, bool side);
@@ -83,6 +84,14 @@ class Board {
 	void changeTurn();
 	void removeCastlingRight(CastlingRights right);
 	void setCastlingRight(CastlingRights right);
+
+
+	int alphaBeta(int alpha, int beta, int depthLeft, int maxDepth);
+	int quiesce(int alpha, int beta);
+	int eval();
+	int countMaterial(int color);
+	void orderMoves(MoveList& moveList);
+	void initTables();
 public:
 	Board copy(); //copy of itself
 	void init();
@@ -103,16 +112,9 @@ public:
 	bool isDrawByMaterial();
 	bool fiftyMoveRule();
 	bool threeFoldRepetitionRule();
-	int generateLegalMoves(MoveList& moveList);
+	int generateLegalMoves(MoveList& moveList, bool capturesOnly=false);
 
 	std::string saveBoardToFen();
 
-	int alphaBeta(int alpha, int beta, int depthLeft);
 	Move searchRoot(int depth);
-	int generateLegalCapturesOnly(MoveList& moveList);
-	int quiesce(int alpha, int beta);
-	int evaluate();
-	int countMaterial(int color);
-	int countMobilityScore(int color);
-	void orderMoves(MoveList& moveList);
 };

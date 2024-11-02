@@ -14,6 +14,7 @@ void Board::init()
 {
 	setBoard();
 	initAttackArrs();
+	initTables();
 }
 
 U64 northOne(U64 b) { return b >> 8; }
@@ -58,7 +59,7 @@ void initInBetween()
 	}
 }
 
-int bitScanForward(U64 bb) {
+int bitScanForward(U64 bb) { //try how much inline would increase performance
 	static const int index64[64] = {
 		0, 47,  1, 56, 48, 27,  2, 60,
 	   57, 49, 41, 37, 28, 16,  3, 61,
@@ -282,27 +283,27 @@ U64 Board::getPieceAttackingKingDirectAttack(Pieces piece, U64 pieceBB)
 	}
 }
 
-void Board::generateWhiteMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces)
+void Board::generateWhiteMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly)
 {
-	getWhitePawnMoves(moveList, checkingPieces, pinnedPieces);
-	getQueenMoves(wQueen, moveList, checkingPieces, pinnedPieces);
-	getRookMoves(wRook, moveList, checkingPieces, pinnedPieces);
-	getKnightMoves(wKnight, moveList, checkingPieces, pinnedPieces);
-	getKingMoves(wKing, moveList);
-	getBishopMoves(wBishop, moveList, checkingPieces, pinnedPieces);
+	getWhitePawnMoves(moveList, checkingPieces, pinnedPieces, capturesOnly);
+	getQueenMoves(wQueen, moveList, checkingPieces, pinnedPieces, capturesOnly);
+	getRookMoves(wRook, moveList, checkingPieces, pinnedPieces, capturesOnly);
+	getKnightMoves(wKnight, moveList, checkingPieces, pinnedPieces, capturesOnly);
+	getKingMoves(wKing, moveList, capturesOnly);
+	getBishopMoves(wBishop, moveList, checkingPieces, pinnedPieces, capturesOnly);
 }
 
-void Board::generateBlackMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces)
+void Board::generateBlackMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly)
 {
-	getBlackPawnMoves(moveList, checkingPieces, pinnedPieces);
-	getQueenMoves(bQueen, moveList, checkingPieces, pinnedPieces);
-	getRookMoves(bRook, moveList, checkingPieces, pinnedPieces);
-	getKnightMoves(bKnight, moveList, checkingPieces, pinnedPieces);
-	getKingMoves(bKing, moveList);
-	getBishopMoves(bBishop, moveList, checkingPieces, pinnedPieces);
+	getBlackPawnMoves(moveList, checkingPieces, pinnedPieces, capturesOnly);
+	getQueenMoves(bQueen, moveList, checkingPieces, pinnedPieces, capturesOnly);
+	getRookMoves(bRook, moveList, checkingPieces, pinnedPieces, capturesOnly);
+	getKnightMoves(bKnight, moveList, checkingPieces, pinnedPieces, capturesOnly);
+	getKingMoves(bKing, moveList, capturesOnly);
+	getBishopMoves(bBishop, moveList, checkingPieces, pinnedPieces, capturesOnly);
 }
 
-int Board::generateLegalMoves(MoveList& moveList)
+int Board::generateLegalMoves(MoveList& moveList, bool capturesOnly)
 {
 	CheckingPieces checkingPieces;
 	findCheckingPieces(checkingPieces, whiteTurn);
@@ -312,32 +313,32 @@ int Board::generateLegalMoves(MoveList& moveList)
 	if (!checkingPieces.count) {
 		checkingPieces.bb = ~0;
 		if (whiteTurn)
-			generateWhiteMoves(moveList, checkingPieces.bb, pinnedPieces);
+			generateWhiteMoves(moveList, checkingPieces.bb, pinnedPieces, capturesOnly);
 		else
-			generateBlackMoves(moveList, checkingPieces.bb, pinnedPieces);
+			generateBlackMoves(moveList, checkingPieces.bb, pinnedPieces, capturesOnly);
 	}
 	else if (checkingPieces.count == 1) {
 		if (whiteTurn) {
 			if (checkingPieces.piece == bKnight || checkingPieces.piece == bPawn) {
-				generateWhiteMoves(moveList, checkingPieces.bb, pinnedPieces);
+				generateWhiteMoves(moveList, checkingPieces.bb, pinnedPieces, capturesOnly);
 			}
 			else {
 				checkingPieces.bb |= getPieceAttackingKingDirectAttack(checkingPieces.piece, checkingPieces.bb);
-				generateWhiteMoves(moveList, checkingPieces.bb, pinnedPieces);
+				generateWhiteMoves(moveList, checkingPieces.bb, pinnedPieces, capturesOnly);
 			}
 		}
 		else {
 			if (checkingPieces.piece == wKnight || checkingPieces.piece == wPawn) {
-				generateBlackMoves(moveList, checkingPieces.bb, pinnedPieces);
+				generateBlackMoves(moveList, checkingPieces.bb, pinnedPieces, capturesOnly);
 			}
 			else {
 				checkingPieces.bb |= getPieceAttackingKingDirectAttack(checkingPieces.piece, checkingPieces.bb);
-				generateBlackMoves(moveList, checkingPieces.bb, pinnedPieces);
+				generateBlackMoves(moveList, checkingPieces.bb, pinnedPieces, capturesOnly);
 			}
 		}
 	}
 	else {
-		getKingMoves((Pieces)(bKing + whiteTurn), moveList);
+		getKingMoves((Pieces)(bKing + whiteTurn), moveList, capturesOnly);
 	}
 	return moveList.count;
 }
@@ -477,7 +478,7 @@ int Board::getCastlingRight(CastlingRights right) { return castlingRights & righ
 
 
 void Board::setWhiteTurn(bool turn) { whiteTurn = turn; }
-void Board::changeTurn() { whiteTurn = !whiteTurn; }
+void Board::changeTurn() { whiteTurn = whiteTurn ^ 1; }
 void Board::removeCastlingRight(CastlingRights right) { castlingRights = castlingRights & ~right; }
 void Board::setCastlingRight(CastlingRights right) { castlingRights |= right; }
 

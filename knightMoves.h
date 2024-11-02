@@ -24,7 +24,7 @@ void initKnightAttacks()
 	}
 }
 
-void Board::getKnightMoves(Pieces knight, MoveList &moveList, U64 checkingPieces, PinnedPieces pinnedPieces)
+void Board::getKnightMoves(Pieces knight, MoveList &moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly)
 {
 	U64 knights = bb[knight];  
 	knights = (knights ^ pinnedPieces.all) & knights;
@@ -36,10 +36,9 @@ void Board::getKnightMoves(Pieces knight, MoveList &moveList, U64 checkingPieces
 			int to = bitScanForwardWithReset(attack);
 			Move move;
 			if ((1ULL << to) & occupied)
-				move = { from, to, knight, getPiece(to), EMPTY };
-			else
-				move = { from, to, knight, EMPTY, EMPTY };
-			moveList.moves[moveList.count++] = move;
+				moveList.moves[moveList.count++] = { from, to, knight, getPiece(to), EMPTY };
+			else if (!capturesOnly)
+				moveList.moves[moveList.count++] = { from, to, knight, EMPTY, EMPTY };
 		}
 	}
 }

@@ -134,9 +134,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ai.cpp" />
+    <ClCompile Include="search.cpp" />
     <ClCompile Include="board.cpp" />
     <ClCompile Include="draw.cpp" />
+    <ClCompile Include="evaluation.cpp" />
     <ClCompile Include="game.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mainMenu.cpp" />
