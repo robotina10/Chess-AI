@@ -24,7 +24,7 @@ void initKnightAttacks()
 	}
 }
 
-void Board::getKnightMoves(Pieces knight, MoveList &moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly)
+void Board::getKnightMoves(Piece knight, MoveList &moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly)
 {
 	U64 knights = bb[knight];  
 	knights = (knights ^ pinnedPieces.all) & knights;

@@ -1,6 +1,7 @@
 #pragma once
 #include <stdlib.h>  
 #include <time.h> 
+#include <optional>
 #include "mainMenu.h"
 
 const sf::Color textCol(58, 58, 58);
@@ -14,7 +15,8 @@ MainMenu::MainMenu(sf::RenderWindow& win) : win(win),
 	computerBtn("COMPUTER", font, { 0, 420 }, 25, textCol),
 	playBtn("PLAY", font, { 0, 490 }, 25, textCol)
 {
-	if (!font.loadFromFile("font/celtig.ttf")) {
+	// SFML 3: Font loading now uses openFromFile instead of loadFromFile
+	if (!font.openFromFile("font/celtig.ttf")) {
 		std::cerr << "Cannot load font: celtig.ttf \n";
 		exit(1);
 	}
@@ -45,26 +47,26 @@ void MainMenu::run()
 
 	while (win.isOpen()) 
 	{
-		sf::Event event;
-		while (win.pollEvent(event))
+		while (auto event = win.pollEvent())
 		{
-			switch (event.type) {
-			case sf::Event::Closed:
+			if (event->is<sf::Event::Closed>())
+			{
 				win.close();
-				break;
-			case sf::Event::MouseButtonPressed:
-				sf::Vector2i pos = sf::Mouse::getPosition(win);
+			}
+			else if (const auto mouseButtonPressed = event->getIf<sf::Event::MouseButtonPressed>())
+			{
+				sf::Vector2i pos = mouseButtonPressed->position;
 				if (whiteBtn.isClicked(pos)) {
-					settings.whiteTurn = true;
+					settings.whiteView = true;
 				}
 				else if (blackBtn.isClicked(pos)) {
-					settings.whiteTurn = false;
+					settings.whiteView = false;
 				}
 				else if (randomBtn.isClicked(pos)) {
 					if (rand() % 10 < 5)
-						settings.whiteTurn = true;
+						settings.whiteView = true;
 					else
-						settings.whiteTurn = false;
+						settings.whiteView = false;
 				}
 				else if (multiplayerBtn.isClicked(pos)) {
 					settings.mode = MULTIPLAYER;

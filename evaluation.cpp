@@ -190,7 +190,6 @@ int Board::eval()
         }
     }
 
-    //tapered eval
     int midGameScore = midGame[whiteTurn] - midGame[OTHER(whiteTurn)];
     int endGameScore = endGame[whiteTurn] - endGame[OTHER(whiteTurn)];
     int midGamePhase = gamePhase;
@@ -198,29 +197,4 @@ int Board::eval()
         midGamePhase = 24; // in case of early promotion 
     int endGamePhase = 24 - midGamePhase;
     return (midGameScore * midGamePhase + endGameScore * endGamePhase) / 24;
-}
-
-/*int Board::eval()
-{
-    int whiteEval = countMaterial(White);
-    int blackEval = countMaterial(Black);
-    int materialScore = whiteEval - blackEval;
-    int mobilityScore = 0;
-    return (materialScore + mobilityScore) * (whiteTurn) ? 1 : -1;
-}*/
-
-const int pawnVal = 100;
-const int knightVal = 300;
-const int bishopVal = 300;
-const int rookVal = 500;
-const int queenVal = 900;
-
-int Board::countMaterial(int color)
-{
-    int material = piecesCount[bPawn + color] * pawnVal;
-    material += piecesCount[bKnight + color] * knightVal;
-    material += piecesCount[bBishop + color] * bishopVal;
-    material += piecesCount[bRook + color] * rookVal;
-    material += piecesCount[bQueen + color] * queenVal;
-    return material;
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <iostream>
+#include <cstdint>
 
 const int WIN_WIDTH = 800, WIN_HEIGHT = 800;
 const int ROWS = 8, COLS = 8;
@@ -16,17 +17,18 @@ enum Mode { AI, MULTIPLAYER };
 struct Settings
 {
 	Mode mode = AI;
-	bool whiteTurn = true;
+	bool whiteView = true;
 };
 
 typedef std::uint64_t U64;
 
-enum Pieces { bKing, wKing, bQueen, wQueen, bRook, wRook, bBishop, wBishop, bKnight, wKnight, bPawn, wPawn, Blacks, Whites, EMPTY };
+enum Piece { bKing, wKing, bQueen, wQueen, bRook, wRook, bBishop, wBishop, bKnight, wKnight, bPawn, wPawn, Blacks, Whites, EMPTY };
 enum Color { Black, White };
 
+const int lineSize = 20;
 
-namespace pieceColor {
-	inline int getPieceColor(Pieces piece)
+namespace pieceColor { // why in an namespace?
+	inline int getPieceColor(Piece piece)
 	{
 		switch (piece) {
 		case bKing:
@@ -46,7 +48,7 @@ namespace pieceColor {
 		}
 	}
 
-	inline int getOpponentGroup(Pieces piece) 
+	inline int getOpponentGroup(Piece piece) 
 	{
 		switch (getPieceColor(piece)) {
 		case Black:

@@ -15,6 +15,7 @@ void Board::init()
 	setBoard();
 	initAttackArrs();
 	initTables();
+	fillZobristArrs();
 }
 
 U64 northOne(U64 b) { return b >> 8; }
@@ -116,7 +117,7 @@ bool Board::isDraw(int moveListCount) // not sure about fifty move rule if it ca
 	return fiftyMoveRule() || threeFoldRepetitionRule() || isStalemate(moveListCount) || isDrawByMaterial();
 }
 
-bool Board::isDrawByMaterial() // https://www.chessprogramming.org/Draw_Evaluation https://www.chessprogramming.org/Interior_Node_Recognizer
+bool Board::isDrawByMaterial()
 {
 	return false;
 }
@@ -128,7 +129,6 @@ bool Board::fiftyMoveRule()
 
 bool Board::threeFoldRepetitionRule()
 {
-	// https://www.chessprogramming.org/Repetitions
 	return false;
 }
 
@@ -173,34 +173,34 @@ void Board::findCheckingPieces(CheckingPieces &cp, bool side)
 	U64 rookAtt = rookAttack(king, occupied);
 	U64 rook = rookAtt & bb[wRook - side];
 	if (rook) {
-		cp.count++;
-		cp.piece = (Pieces)(wRook - side);;
-		cp.bb = rook;
+		cp.piece = (Piece)(wRook - side);
+		cp.bb |= rook;
 	}
 	U64 bishopAtt = bishopAttack(king, occupied);
 	U64 bishop = bishopAtt & bb[wBishop - side];
 	if (bishop) {
-		cp.count++;
-		cp.piece = (Pieces)(wBishop - side);
-		cp.bb = bishop;
+		cp.piece = (Piece)(wBishop - side);
+		cp.bb |= bishop;
 	}
 	U64 queen = (rookAtt | bishopAtt) & bb[wQueen - side];
 	if (queen) {
-		cp.count++;
-		cp.piece = (Pieces)(wQueen - side);
-		cp.bb = queen;
+		cp.piece = (Piece)(wQueen - side);
+		cp.bb |= queen;
 	}
 	U64 knight = knightAttacks[king] & bb[wKnight - side];
 	if (knight) {
-		cp.count++;
-		cp.piece = (Pieces)(wKnight - side);
-		cp.bb = knight;
+		cp.piece = (Piece)(wKnight - side);
+		cp.bb |= knight;
 	}
 	U64 pawn = pawnAttacks[side][king] & bb[wPawn - side];
 	if (pawn) {
+		cp.piece = (Piece)(wPawn - side);
+		cp.bb |= pawn;
+	}
+	U64 pieces = cp.bb;
+	while (pieces) {
+		bitScanForwardWithReset(pieces);
 		cp.count++;
-		cp.piece = (Pieces)(wPawn - side);
-		cp.bb = pawn;
 	}
 }
 
@@ -251,7 +251,7 @@ void Board::findPinnedPieces(PinnedPieces &pinnedPieces, bool side)
 	}
 }
 
-U64 Board::getPieceAttackingKingDirectAttack(Pieces piece, U64 pieceBB)
+U64 Board::getPieceAttackingKingDirectAttack(Piece piece, U64 pieceBB)
 {
 	int from = bitScanForward(pieceBB);
 	U64 attack;
@@ -285,22 +285,22 @@ U64 Board::getPieceAttackingKingDirectAttack(Pieces piece, U64 pieceBB)
 
 void Board::generateWhiteMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly)
 {
-	getWhitePawnMoves(moveList, checkingPieces, pinnedPieces, capturesOnly);
 	getQueenMoves(wQueen, moveList, checkingPieces, pinnedPieces, capturesOnly);
+	getWhitePawnMoves(moveList, checkingPieces, pinnedPieces, capturesOnly);
 	getRookMoves(wRook, moveList, checkingPieces, pinnedPieces, capturesOnly);
 	getKnightMoves(wKnight, moveList, checkingPieces, pinnedPieces, capturesOnly);
-	getKingMoves(wKing, moveList, capturesOnly);
 	getBishopMoves(wBishop, moveList, checkingPieces, pinnedPieces, capturesOnly);
+	getKingMoves(wKing, moveList, capturesOnly);
 }
 
 void Board::generateBlackMoves(MoveList& moveList, U64 checkingPieces, PinnedPieces pinnedPieces, bool capturesOnly)
 {
-	getBlackPawnMoves(moveList, checkingPieces, pinnedPieces, capturesOnly);
 	getQueenMoves(bQueen, moveList, checkingPieces, pinnedPieces, capturesOnly);
+	getBlackPawnMoves(moveList, checkingPieces, pinnedPieces, capturesOnly);
 	getRookMoves(bRook, moveList, checkingPieces, pinnedPieces, capturesOnly);
 	getKnightMoves(bKnight, moveList, checkingPieces, pinnedPieces, capturesOnly);
-	getKingMoves(bKing, moveList, capturesOnly);
 	getBishopMoves(bBishop, moveList, checkingPieces, pinnedPieces, capturesOnly);
+	getKingMoves(bKing, moveList, capturesOnly);
 }
 
 int Board::generateLegalMoves(MoveList& moveList, bool capturesOnly)
@@ -338,7 +338,7 @@ int Board::generateLegalMoves(MoveList& moveList, bool capturesOnly)
 		}
 	}
 	else {
-		getKingMoves((Pieces)(bKing + whiteTurn), moveList, capturesOnly);
+		getKingMoves((Piece)(bKing + whiteTurn), moveList, capturesOnly);
 	}
 	return moveList.count;
 }
@@ -361,7 +361,8 @@ void Board::removeRooksCastlingRights(int rook, int pos)
 
 void Board::makeMove(Move move)
 {
-	Pieces piece = (Pieces)move.getPiece();
+	Piece piece = (Piece)move.getPiece();
+	Piece capture = (Piece)move.getCapturedPiece();
 	int pieceColor = move.getPieceColor();
 	int pieceGroup = move.getPieceGroup();
 	int captureGroup = Whites - pieceColor;
@@ -371,7 +372,6 @@ void Board::makeMove(Move move)
 	bb[piece] ^= fromTo;
 	bb[pieceGroup] ^= fromTo;
 	if (move.isCapture()) {
-		int capture = move.getCapturedPiece();
 		bb[capture] ^= to;
 		bb[captureGroup] ^= to;
 		occupied ^= from;
@@ -381,10 +381,6 @@ void Board::makeMove(Move move)
 	}
 	else {
 		occupied ^= fromTo;
-		if (piece == wPawn || piece == bPawn)
-			halfMoveClock = 0;
-		else
-			halfMoveClock++;
 	}
 
 	removeRooksCastlingRights(piece, move.getFrom());
@@ -448,14 +444,87 @@ void Board::makeMove(Move move)
 	if (move.getSpecialMove() != DOUBLE_PUSH) {
 		enPassantSquare = 0;
 	}
+	if (piece == wPawn || piece == bPawn || capture == wPawn || capture == bPawn)
+		halfMoveClock = 0;
+	else
+		halfMoveClock++;
 	if (!whiteTurn)
 		fullMoveCounter++;
 	changeTurn();
 }
 
-void Board::unMakeMove(Board board)
+void Board::unMakeMove(Move move, PosInfo posInfo)
 {
-	*this = board;
+	halfMoveClock = posInfo.getHalfMoveClock();
+	castlingRights = posInfo.getCastlingRights();
+	enPassantSquare = posInfo.getEpSquare();
+	Piece piece = (Piece)move.getPiece();
+	int pieceColor = move.getPieceColor();
+	int pieceGroup = move.getPieceGroup();
+	int captureGroup = Whites - pieceColor;
+	U64 from = 1ULL << move.getFrom();
+	U64 to = 1ULL << move.getTo();
+	U64 fromTo = from | to;
+	bb[piece] ^= fromTo;
+	bb[pieceGroup] ^= fromTo;
+	if (move.isCapture()) {
+		int capture = move.getCapturedPiece();
+		bb[capture] ^= to;
+		bb[captureGroup] ^= to;
+		occupied ^= from;
+		piecesCount[capture]++;
+	}
+	else {
+		occupied ^= fromTo;
+	}
+	switch (move.getSpecialMove()) {;
+	case KING_CASTLING:
+		from <<= 1;
+		to <<= 1;
+		fromTo = from | to;
+		bb[bRook + pieceColor] ^= fromTo;
+		bb[pieceGroup] ^= fromTo;
+		occupied ^= fromTo;
+		break;
+	case QUEEN_CASTLING:
+		from <<= 4;
+		to >>= 1;
+		fromTo = from | to;
+		bb[bRook + pieceColor] ^= fromTo;
+		bb[pieceGroup] ^= fromTo;
+		occupied ^= fromTo;
+		break;
+	case EN_PASSANT:
+		to = 1ULL << ((move.getTo() < 32) ? move.getTo() + 8 : move.getTo() - 8);
+		bb[captureGroup] ^= to;
+		bb[wPawn - pieceColor] ^= to;
+		occupied ^= to;
+		piecesCount[bPawn + pieceColor]++;
+		break;
+	case BISHOP_PROM:
+		bb[piece] ^= to;
+		bb[bBishop + pieceColor] ^= to;
+		piecesCount[bBishop + pieceColor]--;
+		break;
+	case KNIGHT_PROM:
+		bb[piece] ^= to;
+		bb[bKnight + pieceColor] ^= to;
+		piecesCount[bKnight + pieceColor]--;
+		break;
+	case ROOK_PROM:
+		bb[piece] ^= to;
+		bb[bRook + pieceColor] ^= to;
+		piecesCount[bRook + pieceColor]--;
+		break;
+	case QUEEN_PROM:
+		bb[piece] ^= to;
+		bb[bQueen + pieceColor] ^= to;
+		piecesCount[bQueen + pieceColor]--;
+		break;
+	}
+	if (!whiteTurn)
+		fullMoveCounter--;
+	changeTurn();
 }
 
 void Board::initAttackArrs()
@@ -469,13 +538,14 @@ void Board::initAttackArrs()
 
 U64 Board::getEmpty() { return ~occupied; };
 U64 Board::getBitboard(int index) { return bb[index]; }
-U64 Board::getBitboard(Pieces index) { return bb[index]; }
-U64 Board::getEnemy(Pieces piece) { return bb[pieceColor::getOpponentGroup(piece)]; }
+U64 Board::getBitboard(Piece index) { return bb[index]; }
+U64 Board::getEnemy(Piece piece) { return bb[pieceColor::getOpponentGroup(piece)]; }
 bool Board::isWhiteTurn() { return whiteTurn; }
 bool Board::isEmpty(int pos) { return getEmpty() & (1ULL << pos); }
 
 int Board::getCastlingRight(CastlingRights right) { return castlingRights & right; }
 
+PosInfo Board::getPosInfo() { return PosInfo(castlingRights, enPassantSquare, halfMoveClock); }
 
 void Board::setWhiteTurn(bool turn) { whiteTurn = turn; }
 void Board::changeTurn() { whiteTurn = whiteTurn ^ 1; }
@@ -483,7 +553,7 @@ void Board::removeCastlingRight(CastlingRights right) { castlingRights = castlin
 void Board::setCastlingRight(CastlingRights right) { castlingRights |= right; }
 
 
-Pieces Board::getPiece(int pos)
+Piece Board::getPiece(int pos)
 {
 	if (!((1ULL << pos) && occupied))
 		return EMPTY;
@@ -491,18 +561,18 @@ Pieces Board::getPiece(int pos)
 	if ((bb[Whites] & (1ULL << pos)) >> pos) {
 		for (int i = 1; i < 12; i+=2) {
 			if ((bb[i] & (1ULL << pos)))
-				return (Pieces)i;
+				return (Piece)i;
 		}
 	}
 	if ((bb[Blacks] & (1ULL << pos)) >> pos) {
 		for (int i = 0; i < 10; i+=2) {
 			if ((bb[i] & (1ULL << pos)))
-				return (Pieces)i;
+				return (Piece)i;
 		}
 	}
 }
 
-void Board::placePiece(Pieces piece, int pos)
+void Board::placePiece(Piece piece, int pos)
 {
 	bb[piece] |= 1ULL << pos;
 	bb[Blacks + pieceColor::getPieceColor(piece)] |= 1ULL << pos;
@@ -596,7 +666,7 @@ void Board::setBoard(std::string FEN)
 			setCastlingRight(bQueenSide);
 		}
 		else if (isalpha(c) && isdigit(*(++ptr))) {
-			enPassantSquare = (*ptr - '1') * 8;
+			enPassantSquare = (8 - (*ptr - '1')) * 8;
 			enPassantSquare += c - 'a';
 		}
 		else if (spaces > 2) {

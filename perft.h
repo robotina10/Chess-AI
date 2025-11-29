@@ -6,23 +6,23 @@ using namespace std::chrono;
 
 long long Perft(Board board, int depth, int maxDepth)
 {
-
 	long long count = 0;
 	MoveList moveList(256);
 	board.generateLegalMoves(moveList);
-
+	//for (int i = 0; i < moveList.count; i++) {moveList.moves[i].printMove();std::cout << "1" << "\n";}
 	if (depth == 1)
 		return moveList.count;
 
-	Board b = board.copy();
-
+	PosInfo posInfo = board.getPosInfo();
+	//Board b = board.copy();
 	for (int i = 0; i < moveList.count; i++) {
 		board.makeMove(moveList.moves[i]);
 		long long c = Perft(board, depth - 1, maxDepth);
-		board.unMakeMove(b);
+		board.unMakeMove(moveList.moves[i], posInfo);
+		//board = b;
 		if (depth == maxDepth) {
-			moveList.moves[i].printMove();
-			std::cout << c << "\n";
+			
+			std::cout << moveList.moves[i].getStr() << " :" << c << "\n";
 		}
 		count += c;
 		//count += Perft(board, depth - 1, maxDepth);

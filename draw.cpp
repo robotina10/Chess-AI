@@ -1,15 +1,20 @@
 #include "draw.h"
+#include "board.h"
+#include "move.h"
+#include <iostream>
+#include <cstdlib>
 
+// Definition of pieceTypes - moved from header to avoid multiple definitions
 const std::vector<std::string> pieceTypes = { "bk", "wk", "bq", "wq", "br", "wr", "bb", "wb", "bn", "wn", "bp", "wp" };
 
-void drawPieces(sf::RenderWindow& win, Board &board, bool whiteView)
+void drawPieces(sf::RenderWindow& win, Board& board, bool whiteView)
 {
 	for (int pieceIndex = 0; pieceIndex < pieceTypes.size(); pieceIndex++) {
 		U64 bitboard = board.getBitboard(pieceIndex);
 		for (int i = 0; i < 64; i++) {
 			if ((bitboard >> i) & 1) {
 				sf::Texture texture;
-				if (!texture.loadFromFile("img/" + pieceTypes[pieceIndex] + ".png")) { 
+				if (!texture.loadFromFile("img/" + pieceTypes[pieceIndex] + ".png")) {
 					std::cout << "Cannot load piece img";
 					exit(-1);
 				}
@@ -20,8 +25,8 @@ void drawPieces(sf::RenderWindow& win, Board &board, bool whiteView)
 				int y = SIDE * (7 - i / 8) + SIDE / 10;
 
 				if (whiteView) {
-				    x = SIDE * (i % 8) + SIDE / 10;
-				    y = SIDE * (i / 8) + SIDE / 10;
+					x = SIDE * (i % 8) + SIDE / 10;
+					y = SIDE * (i / 8) + SIDE / 10;
 				}
 				piece.setPosition(sf::Vector2f(x, y));
 				piece.setScale(sf::Vector2f(1.3f, 1.3f));
@@ -31,12 +36,13 @@ void drawPieces(sf::RenderWindow& win, Board &board, bool whiteView)
 	}
 }
 
-void drawBoard(sf::RenderWindow &win)
+void drawBoard(sf::RenderWindow& win)
 {
 	sf::RectangleShape rect(sf::Vector2f(SIDE, SIDE));
 	for (int i = 0; i < ROWS; i++) {
 		for (int j = 0; j < COLS; j++) {
-			rect.setPosition(i * SIDE, j * SIDE);
+			// SFML 3: setPosition takes a Vector2f instead of two scalars
+			rect.setPosition(sf::Vector2f(i * SIDE, j * SIDE));
 			if ((i + j) % 2 == 0) {
 				rect.setFillColor(WHITE);
 			}
@@ -57,16 +63,17 @@ void highlightSquare(sf::RenderWindow& win, Board& board, int squarePos, bool wh
 		squarePos = 63 - squarePos;
 	int y = (squarePos / 8);
 	int x = (squarePos % 8);
-	rect.setPosition(x * SIDE, y * SIDE);
+	// SFML 3: setPosition takes a Vector2f instead of two scalars
+	rect.setPosition(sf::Vector2f(x * SIDE, y * SIDE));
 
 	if ((x + y) % 2 == 0)
 		rect.setFillColor(HIGHLIGHTED_WHITE);
-	else 
+	else
 		rect.setFillColor(HIGHLIGHTED_BLACK);
 	win.draw(rect);
 }
 
-void drawPossibleMoves(sf::RenderWindow& win, MoveList &moveList, int from, bool whiteView)
+void drawPossibleMoves(sf::RenderWindow& win, MoveList& moveList, int from, bool whiteView)
 {
 	sf::RectangleShape rect(sf::Vector2f(SIDE, SIDE));
 	for (int i = 0; i < moveList.count; i++) {
@@ -78,7 +85,8 @@ void drawPossibleMoves(sf::RenderWindow& win, MoveList &moveList, int from, bool
 			int y = to / 8;
 			int x = to % 8;
 			rect.setFillColor(sf::Color::Red);
-			rect.setPosition(x * SIDE, y * SIDE);
+			// SFML 3: setPosition takes a Vector2f instead of two scalars
+			rect.setPosition(sf::Vector2f(x * SIDE, y * SIDE));
 			if ((moveList.moves[i].getFrom() % 8 + moveList.moves[i].getFrom() | 8 + x + y) % 2 == 0)
 				rect.setFillColor(HIGHLIGHTED_WHITE);
 			else
@@ -106,7 +114,7 @@ void drawRanksFiles(sf::RenderWindow& win)
 	}*/
 }
 
-void dragPiece(sf::RenderWindow& win, Board& board, sf::Vector2i pos, int squarePos, Pieces pieceType)
+void dragPiece(sf::RenderWindow& win, Board& board, sf::Vector2i pos, int squarePos, Piece pieceType)
 {
 	sf::Texture texture;
 	if (!texture.loadFromFile("img/" + pieceTypes[pieceType] + ".png")) {
@@ -118,15 +126,4 @@ void dragPiece(sf::RenderWindow& win, Board& board, sf::Vector2i pos, int square
 	piece.setPosition(sf::Vector2f(pos.x, pos.y));
 	piece.setScale(sf::Vector2f(1.8f, 1.8f));
 	win.draw(piece);
-}
-
-void draw(sf::RenderWindow &win, ChessEngine &chess, int from, bool whiteView)
-{
-	win.clear();
-	drawBoard(win);
-	highlightSquare(win, chess.board, from, whiteView);
-	drawPossibleMoves(win, chess.moveList, from, whiteView);
-	drawPieces(win, chess.board, whiteView);
-	drawRanksFiles(win);
-	win.display();
 }

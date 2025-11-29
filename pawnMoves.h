@@ -97,7 +97,7 @@ bool isPromotion(int to)
 	return (to > 55 || to < 8) ? true : false;
 }
 
-void Board::getEnPassantMoves(MoveList& moveList, U64 bb, Pieces piece, int dir)
+void Board::getEnPassantMoves(MoveList& moveList, U64 bb, Piece piece, int dir)
 {
 	while (bb) {
 		int from = bitScanForwardWithReset(bb);
@@ -106,7 +106,7 @@ void Board::getEnPassantMoves(MoveList& moveList, U64 bb, Pieces piece, int dir)
 	}
 }
 
-void Board::getMovesFromPushBB(MoveList& moveList, U64 bb, Pieces piece, int pushDistance, SpecialMove doublePush)
+void Board::getMovesFromPushBB(MoveList& moveList, U64 bb, Piece piece, int pushDistance, SpecialMove doublePush)
 {
 	while (bb) {
 		int to = bitScanForwardWithReset(bb);
@@ -128,12 +128,12 @@ void Board::getMovesFromPushBB(MoveList& moveList, U64 bb, Pieces piece, int pus
 	}
 }
 
-void Board::getMovesFromPawnCaptureBB(MoveList& moveList, U64 bb, Pieces piece, int captureDistance)
+void Board::getMovesFromPawnCaptureBB(MoveList& moveList, U64 bb, Piece piece, int captureDistance)
 {
 	while (bb) {
 		int to = bitScanForwardWithReset(bb);
 		Move move;
-		Pieces capturedPiece = getPiece(to);
+		Piece capturedPiece = getPiece(to);
 		if (isPromotion(to)) {
 			move = { to + captureDistance, to, piece, capturedPiece, QUEEN_PROM };
 			moveList.moves[moveList.count++] = move;

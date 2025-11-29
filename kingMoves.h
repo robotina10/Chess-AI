@@ -13,7 +13,7 @@ void initKingAttacks()
 	}
 }
 
-void Board::getCastlingMoves(Pieces king, MoveList& moveList)
+void Board::getCastlingMoves(Piece king, MoveList& moveList)
 {
 	if (castlingRights) {
 		if (king == wKing) {
@@ -43,7 +43,7 @@ void Board::getCastlingMoves(Pieces king, MoveList& moveList)
 	}
 }
 
-void Board::getKingMoves(Pieces king, MoveList& moveList, bool capturesOnly)
+void Board::getKingMoves(Piece king, MoveList& moveList, bool capturesOnly)
 {
 	int from = bitScanForward(bb[king]);
 	U64 attack = kingAttacks[from] & (getEmpty() | getEnemy(king));
