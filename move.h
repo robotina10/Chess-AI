@@ -12,8 +12,10 @@ class Move
 public:
 	Move() = default;
 	Move(int from, int to, int piece, int capturedPiece, int specialMove);
-	bool operator==(const Move m) { return m.move == m.move; }
-	bool operator!=(const Move m) { return m.move != m.move; }
+
+	bool operator==(const Move m) const { return move == m.move; }
+	bool operator!=(const Move m) const { return move != m.move; }
+
 	int getFrom();
 	int getTo();
 	int getPiece();
@@ -26,6 +28,8 @@ public:
 	bool isCastling();
 	void setPromotion(int promotionPiece);
 	std::string getStr();
+
+	bool isNone() const { return move == 0; }
 };
 
 struct MoveList
@@ -37,17 +41,6 @@ struct MoveList
 	MoveList(int size) : size(size), moves(new Move[size]), scores(new int[size]) {}
 	~MoveList() { delete[] moves; delete[] scores; }
 };
-
-/*template <size_t N> // stack allocated (probably not enough size in stack)
-struct MoveList {
-	int count = 0;
-	std::array<Move, N> moves; 
-	std::array<int, N> scores;  
-
-	MoveList() = default;       
-
-	MoveList(int size) : count(size) {}
-};*/
 
 struct PosInfo
 {

@@ -26,6 +26,7 @@ void Game::startGame()
 {
 	init();
 	//std::thread perftThread(getPerftWithTime, chess.board, 6);
+	//perftTestDefaultFen();
 	chess.board.generateLegalMoves(chess.moveList);
 	while (win.isOpen())
 	{
@@ -213,7 +214,7 @@ void Game::draw()
 void Game::computer()
 {
     //neural Network
-    std::ofstream myMove("chessNeuralNet/input.txt");
+    /*std::ofstream myMove("chessNeuralNet/input.txt");
     myMove << chess.playedMoves.back().move.getStr();
 
     std::string venvPython = "chessNeuralNet/venv/Scripts/python.exe";
@@ -241,13 +242,13 @@ void Game::computer()
     chess.playedMoves.push_back(Position(move, chess.board.getPosInfo()));
     chess.board.makeMove(move);
     chess.moveList.count = 0;
-    chess.board.generateLegalMoves(chess.moveList);
+    chess.board.generateLegalMoves(chess.moveList);*/
     //"programmed ai"
-    /*
+    
     Move move = chess.board.searchPosition();
     chess.playedMoves.push_back(Position(move, chess.board.getPosInfo()));
     chess.board.makeMove(move);
     chess.moveList.count = 0;
     chess.board.generateLegalMoves(chess.moveList);
-    */
+    
 }

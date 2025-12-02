@@ -1,10 +1,48 @@
+#pragma once
 #include "board.h"
+#include <algorithm>
 
 #define OTHER(side) ((side) ^ 1)
 #define PCOLOR(p) ((p) & 1)
 #define FLIP(sq) ((sq) ^ 56)
 
-int mg_pawn_table[64] = { // from www.chessprogramming.org/PeSTO%27s_Evaluation_Function
+// -----------------------------------------------------------------------------
+// MASKS & HELPERS
+// -----------------------------------------------------------------------------
+
+// File Masks
+const U64 FileABB = 0x0101010101010101ULL;
+const U64 FileHBB = 0x8080808080808080ULL;
+
+inline U64 fileMask(int sq) { return FileABB << (sq & 7); }
+
+// Returns the file of the square and the two adjacent files
+inline U64 adjacentFiles(int sq) {
+    U64 f = fileMask(sq);
+    return ((f & ~FileABB) >> 1) | ((f & ~FileHBB) << 1);
+}
+
+// Knight Attacks (Computed on fly to avoid global variable linker errors)
+// This handles board wrapping correctly (e.g., File H + 1 doesn't become File A)
+U64 evalKnightAttacks(int sq) {
+    U64 att = 0;
+    U64 b = 1ULL << sq;
+    if ((b << 17) & ~FileABB) att |= (b << 17);
+    if ((b << 10) & ~(FileABB | (FileABB << 1))) att |= (b << 10);
+    if ((b >> 6) & ~(FileABB | (FileABB << 1))) att |= (b >> 6);
+    if ((b >> 15) & ~FileABB) att |= (b >> 15);
+    if ((b << 15) & ~FileHBB) att |= (b << 15);
+    if ((b << 6) & ~(FileHBB | (FileHBB >> 1))) att |= (b << 6);
+    if ((b >> 10) & ~(FileHBB | (FileHBB >> 1))) att |= (b >> 10);
+    if ((b >> 17) & ~FileHBB) att |= (b >> 17);
+    return att;
+}
+
+// -----------------------------------------------------------------------------
+// PeSTO TABLES
+// -----------------------------------------------------------------------------
+
+int mg_pawn_table[64] = {
       0,   0,   0,   0,   0,   0,  0,   0,
      98, 134,  61,  95,  68, 126, 34, -11,
      -6,   7,  26,  31,  65,  56, 25, -20,
@@ -139,24 +177,8 @@ int eg_king_table[64] = {
 int mg_value[6] = { 0, 1025, 477, 365, 337, 82 };
 int eg_value[6] = { 0, 936, 512, 297, 281, 94 };
 
-int* mg_tables[6] =
-{
-    mg_king_table,
-    mg_queen_table,
-    mg_rook_table,
-    mg_bishop_table,
-    mg_knight_table,
-    mg_pawn_table
-};
-int* eg_tables[6] =
-{
-    eg_king_table,
-    eg_queen_table,
-    eg_rook_table,
-    eg_bishop_table,
-    eg_knight_table,
-    eg_pawn_table
-};
+int* mg_tables[6] = { mg_king_table, mg_queen_table, mg_rook_table, mg_bishop_table, mg_knight_table, mg_pawn_table };
+int* eg_tables[6] = { eg_king_table, eg_queen_table, eg_rook_table, eg_bishop_table, eg_knight_table, eg_pawn_table };
 
 int midGameTables[12][64];
 int endGameTables[12][64];
@@ -167,12 +189,24 @@ void Board::initTables()
     for (int p = 0; p < 6; p++) {
         for (int i = 0; i < 64; i++) {
             midGameTables[p][i] = mg_value[p] + mg_tables[p][i];
-            midGameTables[p+1][i] = mg_value[p] + mg_tables[p][FLIP(i)];
+            midGameTables[p + 1][i] = mg_value[p] + mg_tables[p][FLIP(i)];
             endGameTables[p][i] = eg_value[p] + eg_tables[p][i];
-            endGameTables[p+1][i] = eg_value[p] + eg_tables[p][FLIP(i)];
+            endGameTables[p + 1][i] = eg_value[p] + eg_tables[p][FLIP(i)];
         }
     }
 }
+
+// -----------------------------------------------------------------------------
+// EVALUATION
+// -----------------------------------------------------------------------------
+
+// Heuristic Weights
+const int ISOLATED_PAWN_PENALTY = -10;
+const int DOUBLED_PAWN_PENALTY = -15;
+const int PASSED_PAWN_BONUS[8] = { 0, 5, 10, 20, 35, 60, 100, 200 };
+const int MOBILITY_BONUS = 5;
+const int SEMI_OPEN_FILE_PENALTY = -10;
+const int OPEN_FILE_PENALTY = -20;
 
 int Board::eval()
 {
@@ -180,21 +214,98 @@ int Board::eval()
     int endGame[2]{};
     int gamePhase = 0;
 
+    U64 whitePawns = bb[wPawn];
+    U64 blackPawns = bb[bPawn];
+    U64 allPieces = occupied;
+
     for (int i = 0; i < 12; i++) {
         U64 pieces = bb[i];
+        int pieceType = i >> 1; // 0=K, 1=Q, 2=R, 3=B, 4=N, 5=P
+        int side = PCOLOR(i);   // 1=White, 0=Black
+
         while (pieces) {
             int pos = bitScanForwardWithReset(pieces);
-            midGame[PCOLOR(i)] += midGameTables[i][pos];
-            endGame[PCOLOR(i)] += endGameTables[i][pos];
+
+            // 1. Base Material + PST
+            midGame[side] += midGameTables[i][pos];
+            endGame[side] += endGameTables[i][pos];
             gamePhase += gamePhaseInc[i];
+
+            // 2. Complex Heuristics
+            int bonus = 0;
+
+            if (pieceType == 5) { // PAWNS
+                // A. Pawn Structure
+                U64 myPawns = (side == White) ? whitePawns : blackPawns;
+                U64 oppPawns = (side == White) ? blackPawns : whitePawns;
+                U64 fMask = fileMask(pos);
+                U64 adjMask = adjacentFiles(pos);
+
+                // Doubled Pawn
+                if (popCount(myPawns & fMask) > 1)
+                    bonus += DOUBLED_PAWN_PENALTY;
+
+                // Isolated Pawn
+                if ((myPawns & adjMask) == 0)
+                    bonus += ISOLATED_PAWN_PENALTY;
+
+                // Passed Pawn
+                // CRITICAL FIX: Board Direction
+                // White moves "North" (Indices decrease to 0) -> Look at bits 0 to pos-1
+                // Black moves "South" (Indices increase to 63) -> Look at bits pos+1 to 63
+                U64 passedMask = (fMask | adjMask);
+                if (side == White) {
+                    passedMask &= ((1ULL << pos) - 1); // Bits LOWER than pos
+                }
+                else {
+                    passedMask &= ~((1ULL << (pos + 1)) - 1); // Bits HIGHER than pos
+                }
+
+                if ((passedMask & oppPawns) == 0) {
+                    // White promotes at Rank 0 (idx 0-7), Black at Rank 7 (idx 56-63)
+                    int rank = (side == White) ? (pos / 8) : (7 - (pos / 8));
+                    // Invert rank index because table usually rewards advancement
+                    // Current rank: White at 6 (Start) -> 1 (Promote). Black at 1 -> 6.
+                    // Let's standardize: 0=Start, 7=Promote
+                    int advancedRank = (side == White) ? (6 - (pos / 8)) : ((pos / 8) - 1);
+                    if (advancedRank >= 0 && advancedRank < 8)
+                        bonus += PASSED_PAWN_BONUS[advancedRank];
+                }
+            }
+            else if (pieceType == 0) { // KING
+                // King Safety (Semi-open / Open Files)
+                U64 fMask = fileMask(pos);
+                if ((whitePawns & fMask) == 0) bonus += (blackPawns & fMask) ? SEMI_OPEN_FILE_PENALTY : OPEN_FILE_PENALTY;
+            }
+            else { // PIECES (N, B, R, Q)
+                // Mobility
+                U64 attacks = 0;
+                U64 friendly = (side == White) ? bb[Whites] : bb[Blacks];
+
+                if (pieceType == 4) // Knight
+                    attacks = evalKnightAttacks(pos);
+                else if (pieceType == 3) // Bishop
+                    attacks = bishopAttack(pos, allPieces);
+                else if (pieceType == 2) // Rook
+                    attacks = rookAttack(pos, allPieces);
+                else if (pieceType == 1) // Queen
+                    attacks = bishopAttack(pos, allPieces) | rookAttack(pos, allPieces);
+
+                attacks &= ~friendly;
+                bonus += popCount(attacks) * MOBILITY_BONUS;
+            }
+
+            midGame[side] += bonus;
+            endGame[side] += bonus;
         }
     }
 
     int midGameScore = midGame[whiteTurn] - midGame[OTHER(whiteTurn)];
     int endGameScore = endGame[whiteTurn] - endGame[OTHER(whiteTurn)];
     int midGamePhase = gamePhase;
-    if (midGamePhase > 24) 
-        midGamePhase = 24; // in case of early promotion 
+    if (midGamePhase > 24)
+        midGamePhase = 24;
     int endGamePhase = 24 - midGamePhase;
+
     return (midGameScore * midGamePhase + endGameScore * endGamePhase) / 24;
 }

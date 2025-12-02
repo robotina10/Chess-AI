@@ -1,227 +1,326 @@
 #include <chrono>
+#include <iostream>
+#include <algorithm>
+#include <cstring>
+#include <random>
 #include "board.h"
 #include "transpositionTable.h"
 
-const int MATE_SCORE = -1000000000;
-const int MAX_DEPTH = 125;
+// -------------------------------------------------------------------------
+// Global Variables Definition
+// -------------------------------------------------------------------------
+HashEntry transTable[TABLE_SIZE];
+U64 pieceArr[12][64];
+U64 castleArr[5];
+U64 epArr[8];
+U64 blackMove;
 
-//most valuable victim, least valuable atacker
-int mvv_lva[6][6] = {
-	{0, 0, 0, 0, 0, 0} ,       // victim K, attacker K, Q, R, B, N, P,
-	{50, 51, 52, 53, 54, 55}, // victim Q, attacker K, Q, R, B, N, P,
-	{40, 41, 42, 43, 44, 45}, // victim R, attacker K, Q, R, B, N, P,
-	{30, 31, 32, 33, 34, 35,}, // victim B, attacker K, Q, R, B, N, P,
-	{20, 21, 22, 23, 24, 25}, // victim N, attacker K, Q, R, B, N, P,
-	{10, 11, 12, 13, 14, 15}, // victim P, attacker K, Q, R, B, N, P,
-};
+// Search Constants
+const int MATE_SCORE = -1000000;
+const int DRAW_SCORE = 0;
+const int MAX_PLY = 128;
+const int INF = 1000000000;
+const int MAX_DEPTH = 64; // Added MAX_DEPTH
 
-const int value[] = { 100, 100, 300, 300, 500, 500, 1000, 1000 };
-int movesCount = 0;
-Move killerMoves[MAX_DEPTH][2];
+// Heuristics Arrays
+Move killerMoves[MAX_PLY][2];
 int history[2][64][64];
 
-bool timedOut(std::chrono::steady_clock::time_point start, float timeLimit)
+// MVV-LVA: Most Valuable Victim - Least Valuable Attacker
+// (Victim: P, N, B, R, Q, K) x (Attacker: P, N, B, R, Q, K)
+int mvv_lva[6][6] = {
+    {0, 0, 0, 0, 0, 0},         // Victim K (invalid)
+    {50, 51, 52, 53, 54, 55},   // Victim Q
+    {40, 41, 42, 43, 44, 45},   // Victim R
+    {30, 31, 32, 33, 34, 35},   // Victim B
+    {20, 21, 22, 23, 24, 25},   // Victim N
+    {10, 11, 12, 13, 14, 15},   // Victim P
+};
+
+// -------------------------------------------------------------------------
+// Zobrist Hashing & Transposition Table Implementation
+// -------------------------------------------------------------------------
+
+void Board::fillZobristArrs()
 {
-	return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() >= timeLimit;
+    // Initialize random number generator
+    std::random_device rd;
+    std::mt19937_64 generator(rd());
+    std::uniform_int_distribution<uint64_t> distribution(0, UINT64_MAX);
+
+    for (int i = 0; i < 12; i++) {
+        for (int j = 0; j < 64; j++) {
+            pieceArr[i][j] = distribution(generator);
+        }
+    }
+
+    castleArr[0] = 0;
+    for (int i = 1; i < 5; i++) {
+        castleArr[i] = distribution(generator);
+    }
+
+    for (int i = 0; i < 8; i++) {
+        epArr[i] = distribution(generator);
+    }
+
+    blackMove = distribution(generator);
+
+    // Clear the Transposition Table
+    std::memset(transTable, 0, sizeof(HashEntry) * TABLE_SIZE);
 }
 
-/*U64 Board::getLeastValuablePiece(U64 attadef, int side, int& piece)
+U64 Board::ZobristKey()
 {
-	for (piece = bPawn + side; piece >= bKing + side; piece -= 2) {
-		U64 subset = attadef & bb[piece];
-		if (subset)
-			return subset & -subset; // single bit
-	}
-	return 0;
+    U64 key = 0;
+
+    // Hash pieces
+    for (int i = 0; i < 12; i++) {
+        U64 pieces = bb[i];
+        while (pieces) {
+            int pos = bitScanForwardWithReset(pieces);
+            key ^= pieceArr[i][pos];
+        }
+    }
+
+    // Hash turn
+    if (!whiteTurn) {
+        key ^= blackMove;
+    }
+
+    // Hash castling rights
+    key ^= castleArr[castlingRights];
+
+    // Hash en passant
+    if (enPassantSquare) {
+        key ^= epArr[enPassantSquare % 8];
+    }
+
+    return key;
 }
 
-int Board::see(int to, Piece target, int from, Piece attacker) // https://www.chessprogramming.org/SEE_-_The_Swap_Algorithm
+// Interface method called by board.h (Legacy support)
+void Board::recordHash(int val, int hashFlag, int depth)
 {
-	int side = pieceColor::getPieceColor(target);
-	int gain[32], d = 0;
-	U64 mayXray = bb[bPawn + side] | bb[bBishop + side] | bb[bRook + side] | bb[bQueen + side];
-	U64 fromSet = 1ULL << from;
-	U64 occ = occupied;
-	U64 attadef = attacked(occ, to);
-	gain[d] = value[target];
-	do {
-		d++; // next depth and side
-		gain[d] = value[attacker] - gain[d - 1]; // speculative store, if defended
-		attadef ^= fromSet; // reset bit in set to traverse
-		occ ^= fromSet; // reset bit in temporary occupancy (for x-Rays)
-		if (fromSet & mayXray) {
-			if ()
-				attadef |= xrayBishopAttacks();
-			if ()
-				attadef |= xrayRookAttacks(occ, );
-		}
-		fromSet = getLeastValuablePiece(attadef, d & 1, (int &)attacker);
-	} while (fromSet);
-	while (--d) {
-		gain[d - 1] = -std::max(-gain[d - 1], gain[d]);
-	}
-	return gain[0];
-}*/
+    U64 key = ZobristKey();
+    HashEntry* hash = &transTable[key & (TABLE_SIZE - 1)];
 
-void storeKillerMove(Move move, int ply)
-{
-	if (killerMoves[ply][0] != move) {
-		killerMoves[ply][1] = killerMoves[ply][0];
-		killerMoves[ply][0] = move;
-	}
+    if (hash->key != key || hash->depth <= depth) {
+        hash->key = key;
+        hash->score = val;
+        hash->flags = hashFlag;
+        hash->depth = depth;
+    }
 }
 
-void storeHistoryMove(Move move, int ply)
+int Board::retrieveHash(int alpha, int beta, int depth)
 {
-	history[move.getPieceColor()][move.getTo()][move.getFrom()] += ply * ply;
+    U64 key = ZobristKey();
+    HashEntry* hash = &transTable[key & (TABLE_SIZE - 1)];
+
+    if (hash->key == key) {
+        if (hash->depth >= depth) {
+            if (hash->flags == HASH_EXACT)
+                return hash->score;
+            if (hash->flags == HASH_ALPHA && hash->score <= alpha)
+                return alpha;
+            if (hash->flags == HASH_BETA && hash->score >= beta)
+                return beta;
+        }
+    }
+    return SCORE_UNKNOWN;
 }
 
-void Board::scoreMoves(MoveList& moveList, int depth)
-{
-	//tt
-	//mvv-lva, see???
-	//killmoves
-	//historyheuristic
-	const int MVV_LVA_OFFSET = 1000000;
-	const int KILLER_VALUE = 900;
-	const int HISTORY_VALUE = 100;
-	for (int i = 0; i < moveList.count; i++) {
-		Move move = moveList.moves[i];
-		if (move.isCapture()) {
-			moveList.scores[i] = MVV_LVA_OFFSET + mvv_lva[move.getCapturedPiece()][move.getPiece()];
-		}
-		else {
-			if (move == killerMoves[depth][0])
-				moveList.scores[i] = MVV_LVA_OFFSET - KILLER_VALUE;
-			else if (move == killerMoves[depth][1])
-				moveList.scores[i] = MVV_LVA_OFFSET - 2 * KILLER_VALUE;
-			else
-				moveList.scores[i] = history[move.getPieceColor()][move.getTo()][move.getFrom()] * HISTORY_VALUE;
-		}
-	}
+// -------------------------------------------------------------------------
+// Move Ordering
+// -------------------------------------------------------------------------
+
+void pickMove(MoveList& moveList, int startIndex) {
+    int bestIndex = startIndex;
+    for (int i = startIndex + 1; i < moveList.count; i++) {
+        if (moveList.scores[i] > moveList.scores[bestIndex]) {
+            bestIndex = i;
+        }
+    }
+    std::swap(moveList.moves[startIndex], moveList.moves[bestIndex]);
+    std::swap(moveList.scores[startIndex], moveList.scores[bestIndex]);
 }
 
-void selectMove(MoveList &moveList, int start)
+void Board::scoreMoves(MoveList& moveList, int ply)
 {
-	for (int i = start + 1; i < moveList.count; i++) {
-		if (moveList.scores[i] > moveList.scores[start]) {
-			std::swap(moveList.scores[start], moveList.scores[i]);
-			std::swap(moveList.moves[start], moveList.moves[i]);
-		}
-	}
+    for (int i = 0; i < moveList.count; i++) {
+        Move move = moveList.moves[i];
+        int score = 0;
+
+        if (move.isCapture()) {
+            // MVV-LVA
+            score = 1000000 + mvv_lva[move.getCapturedPiece()][move.getPiece()];
+        }
+        else {
+            // Killers & History
+            if (killerMoves[ply][0] == move)
+                score = 900000;
+            else if (killerMoves[ply][1] == move)
+                score = 800000;
+            else
+                score = history[move.getPieceColor()][move.getTo()][move.getFrom()];
+        }
+        moveList.scores[i] = score;
+    }
 }
+
+// -------------------------------------------------------------------------
+// Search Implementation
+// -------------------------------------------------------------------------
 
 int Board::quiesce(int alpha, int beta)
 {
-	int standPat = eval();
-	if (standPat >= beta)
-		return beta;
-	if (alpha < standPat)
-		alpha = standPat;
+    int standPat = eval();
+    if (standPat >= beta) return beta;
+    if (alpha < standPat) alpha = standPat;
 
-	MoveList moveList(218);
-	generateLegalMoves(moveList, true);
+    MoveList moveList(218);
+    generateLegalMoves(moveList, true); // captures only
 
-	if (!moveList.count) {
-		if (isCheck())
-			return MATE_SCORE;
-		return 0;
-	}
-	scoreMoves(moveList, 0);
+    scoreMoves(moveList, 0);
 
-	PosInfo posInfo(castlingRights, enPassantSquare, halfMoveClock);
+    PosInfo posInfo(castlingRights, enPassantSquare, halfMoveClock);
 
-	for (int i = 0; i < moveList.count; i++) {
-		selectMove(moveList, i);
-		makeMove(moveList.moves[i]);
-		movesCount++;
-		int score = -quiesce(-beta, -alpha);
-		unMakeMove(moveList.moves[i], posInfo);
+    for (int i = 0; i < moveList.count; i++) {
+        pickMove(moveList, i);
+        Move move = moveList.moves[i];
 
-		if (score >= beta)
-			return beta;
-		if (score > alpha)
-			alpha = score;
-	}
-	return alpha;
+        makeMove(move);
+        int score = -quiesce(-beta, -alpha);
+        unMakeMove(move, posInfo);
+
+        if (score >= beta) return beta;
+        if (score > alpha) alpha = score;
+    }
+    return alpha;
 }
 
-int Board::alphaBeta(int alpha, int beta, int depthLeft, int maxDepth)
+int Board::alphaBeta(int alpha, int beta, int depthLeft, int ply)
 {
-	if (depthLeft == 0) {
-		 return quiesce(alpha, beta);
-	}
+    if (ply >= MAX_PLY) return eval();
 
-	MoveList moveList(218);
-	generateLegalMoves(moveList);
+    // 1. TT Lookup
+    U64 key = ZobristKey();
+    HashEntry* ttEntry = &transTable[key & (TABLE_SIZE - 1)];
+    bool ttHit = (ttEntry->key == key);
+    Move ttMove;
 
-	if (!moveList.count) {
-		if (isCheck())
-			return MATE_SCORE + (maxDepth - depthLeft);
-		return 0;
-	}
-	scoreMoves(moveList, depthLeft);
+    if (ttHit) {
+        ttMove = ttEntry->bestMove;
+        if (ttEntry->depth >= depthLeft && ply > 0) {
+            if (ttEntry->flags == HASH_EXACT) return ttEntry->score;
+            if (ttEntry->flags == HASH_ALPHA && ttEntry->score <= alpha) return alpha;
+            if (ttEntry->flags == HASH_BETA && ttEntry->score >= beta) return beta;
+        }
+    }
 
-	PosInfo posInfo(castlingRights, enPassantSquare, halfMoveClock);
+    if (depthLeft <= 0) return quiesce(alpha, beta);
 
+    MoveList moveList(218);
+    generateLegalMoves(moveList);
 
-	int ply = maxDepth - depthLeft;
-	for (int i = 0; i < moveList.count; i++) {
-		selectMove(moveList, i);
-		Move move = moveList.moves[i];
-		makeMove(move);
-		movesCount++;
-		int score = -alphaBeta(-beta, -alpha, depthLeft - 1, maxDepth);
-		unMakeMove(move, posInfo);
+    if (moveList.count == 0) {
+        if (isCheck()) return MATE_SCORE + ply;
+        return DRAW_SCORE;
+    }
 
-		if (score >= beta) {
-			if (!move.isCapture()) {
-				storeKillerMove(move, ply);
-				storeHistoryMove(move, ply);
-			}
-			return beta;
-		}
+    // 2. Score Moves
+    scoreMoves(moveList, ply);
+    if (ttHit && !ttMove.isNone()) {
+        for (int i = 0; i < moveList.count; i++) {
+            if (moveList.moves[i] == ttMove) {
+                moveList.scores[i] = 2000000;
+                break;
+            }
+        }
+    }
 
-		if (score > alpha)
-			alpha = score;
-	}
-	return alpha;
+    PosInfo posInfo(castlingRights, enPassantSquare, halfMoveClock);
+    int bestScore = -INF;
+    int startAlpha = alpha;
+    Move bestMoveFound;
+
+    for (int i = 0; i < moveList.count; i++) {
+        pickMove(moveList, i);
+        Move move = moveList.moves[i];
+
+        makeMove(move);
+
+        int score;
+        if (i == 0) {
+            score = -alphaBeta(-beta, -alpha, depthLeft - 1, ply + 1);
+        }
+        else {
+            score = -alphaBeta(-alpha - 1, -alpha, depthLeft - 1, ply + 1);
+            if (score > alpha && score < beta) {
+                score = -alphaBeta(-beta, -alpha, depthLeft - 1, ply + 1);
+            }
+        }
+
+        unMakeMove(move, posInfo);
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestMoveFound = move;
+        }
+
+        if (score >= beta) {
+            ttEntry->key = key;
+            ttEntry->score = beta;
+            ttEntry->depth = depthLeft;
+            ttEntry->flags = HASH_BETA;
+            ttEntry->bestMove = move;
+
+            if (!move.isCapture()) {
+                killerMoves[ply][1] = killerMoves[ply][0];
+                killerMoves[ply][0] = move;
+                history[move.getPieceColor()][move.getTo()][move.getFrom()] += depthLeft * depthLeft;
+            }
+            return beta;
+        }
+
+        if (score > alpha) alpha = score;
+    }
+
+    ttEntry->key = key;
+    ttEntry->score = alpha;
+    ttEntry->depth = depthLeft;
+    ttEntry->flags = (alpha > startAlpha) ? HASH_EXACT : HASH_ALPHA;
+    ttEntry->bestMove = bestMoveFound;
+
+    return alpha;
 }
 
 Move Board::searchPosition()
-{ 
-	float timeLimit = 1000; //miliseconds
-	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+{
+    float timeLimit = 1000.0f;
+    std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
-	Move bestMove;
-	MoveList moveList(218);
-	generateLegalMoves(moveList);
-	PosInfo posInfo(castlingRights, enPassantSquare, halfMoveClock);
-	int depth = 2;
-	//for (int depth = 1; depth < MAX_DEPTH; depth++) {
-		int bestScore = INT_MIN;
-		scoreMoves(moveList, depth);
+    Move bestMove;
+    int alpha = -INF;
+    int beta = INF;
 
-		for (int i = 0; i < moveList.count; i++) {
-			selectMove(moveList, i);
-			Move move = moveList.moves[i];
-			makeMove(move);
-			movesCount++;
-			int score = -alphaBeta(-1000000000, 1000000000, depth - 1, depth);
-			unMakeMove(move, posInfo);
-			std::cout << move.getStr() << ": ";
-			std::cout << score << "\n";
-			if (score > bestScore) {
-				bestScore = score;
-				bestMove = move;
-			}
-			//if (timedOut(start, timeLimit)) {
-			//	std::cout << "Depth searched: " << depth << " Moves searched: " << movesCount << "\n";
-			//	movesCount = 0;
-			//	return bestMove;
-			//}
-		}
-	//}
-	std::cout <<  "Moves searched : " << movesCount << "\n";
-	return bestMove;
+    std::memset(killerMoves, 0, sizeof(killerMoves));
+    std::memset(history, 0, sizeof(history));
+
+    for (int depth = 1; depth <= MAX_DEPTH; depth++) {
+        int score = alphaBeta(alpha, beta, depth, 0);
+
+        auto now = std::chrono::steady_clock::now();
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count() >= timeLimit) {
+            if (depth > 1) break;
+        }
+
+        U64 key = ZobristKey();
+        HashEntry* ttEntry = &transTable[key & (TABLE_SIZE - 1)];
+        if (ttEntry->key == key && !ttEntry->bestMove.isNone()) {
+            bestMove = ttEntry->bestMove;
+            std::cout << "Depth: " << depth << " | Score: " << score << " | Best Move: " << bestMove.getStr() << "\n";
+        }
+    }
+    return bestMove;
 }

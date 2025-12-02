@@ -25,16 +25,7 @@ typedef struct Line
 	Move moveLine[lineSize];
 };
 
-//const std::string defaultFEN = "rnbqkb1r/pp1p1pPp/8/2p1pP2/1P1P4/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1";
-//const std::string defaultFEN = "rnbqkb1r/pp1p1pPp/8/2p1pP2/1P1P4/3P3P/P1P1P3/RNBQKBNR w KQkq e6 0 1";
-//const std::string defaultFEN = "r2q1rk1/ppp2ppp/2n1bn2/2b1p3/3pP3/3P1NPP/PPP1NPB1/R1BQ1RK1 b - - 0 9 ";
-
 const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-//const std::string defaultFEN = "4k/4r/4r/8/8/4K/8/8 w - 0 1";
-//const std::string defaultFEN = "8/k/3p/p2P1p/P2P1P/8/8/K w - 0 1";
-//const std::string defaultFEN = "8/k5P/3p/p2P/P2P1P/8/8/K w - 0 1";
-//const std::string defaultFEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - "; // perft 5: 193690690 6: 8031647685
-//const std::string defaultFEN = "4k3/8/8/8/q/8/PPP4/4K3 w - 0 1";
 
 const U64 notAFile = ~0x0101010101010101;
 const U64 notHFile = ~0x8080808080808080;
@@ -49,12 +40,19 @@ U64 soWeOne(U64 b);
 U64 noWeOne(U64 b);
 
 int bitScanForward(U64 bb);
-int bitScanForwardWithReset(U64 &bb);
+int bitScanForwardWithReset(U64& bb);
 
+// Counts the number of set bits (1s) in a 64-bit integer
+inline int popCount(U64 x) {
+	x -= (x >> 1) & 0x5555555555555555;
+	x = (x & 0x3333333333333333) + ((x >> 2) & 0x3333333333333333);
+	x = (x + (x >> 4)) & 0x0f0f0f0f0f0f0f0f;
+	return (x * 0x0101010101010101) >> 56;
+}
 
 class Board {
 	U64 bb[14]{};
-	int piecesCount[12]{}; //do i use it, why did i wanted to use it??? xd :)
+	int piecesCount[12]{};
 	U64 occupied = 0;
 
 	int castlingRights = 0;
@@ -102,8 +100,6 @@ class Board {
 	int quiesce(int alpha, int beta);
 	int eval();
 	void scoreMoves(MoveList& moveList, int depth);
-	//U64 getLeastValuablePiece(U64 attadef, int side, int& piece);
-	//int see(int to, Piece target, int from, Piece attacker); //Static Exchange Evaluation
 	void fillZobristArrs();
 	U64 ZobristKey();
 	void recordHash(int val, int hashFlag, int depth);
@@ -130,7 +126,7 @@ public:
 	bool isDrawByMaterial();
 	bool fiftyMoveRule();
 	bool threeFoldRepetitionRule();
-	int generateLegalMoves(MoveList& moveList, bool capturesOnly=false);
+	int generateLegalMoves(MoveList& moveList, bool capturesOnly = false);
 
 	std::string saveBoardToFen();
 

@@ -45,3 +45,19 @@ void getPerftWithTime(Board board, int maxDepth)
 	std::cout << std::fixed << std::cout.precision(3) << "  " << (nodes / (duration.count() / 1000.0)) / 1000000 << " Mn/s" << "\n"; // in output is 6 wtf?
 
 }
+
+void perftTestDefaultFen()
+{
+	Board board;
+	board.init();
+	long long nodes[7] = { 20, 400, 8902, 197281, 4865609, 119060324, 3195901860 };
+	for (int depth = 1; depth <= 7; depth++) {
+		long long count = Perft(board, depth, depth);
+		if (count == nodes[depth - 1]) {
+			std::cout << "Perft test passed for depth " << depth << ": " << count << " nodes.\n";
+		}
+		else {
+			std::cout << "Perft test FAILED for depth " << depth << ": expected " << nodes[depth - 1] << ", got " << count << ".\n";
+		}
+	}
+}

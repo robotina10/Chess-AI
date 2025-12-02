@@ -592,7 +592,7 @@ void Board::setBoard(std::string FEN)
 
 		int pos = rank * 8 + file;
 		if (isdigit(c)) {
-			file += atoi(&c);
+			file += c - '0';
 			continue;
 		}
 
