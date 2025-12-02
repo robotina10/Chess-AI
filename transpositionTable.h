@@ -1,25 +1,23 @@
 #pragma once
 #include "board.h"
 
-// Hash Flag Constants
+#define SCORE_UNKNOWN -32767
 #define HASH_EXACT 0
 #define HASH_ALPHA 1
 #define HASH_BETA  2
-#define SCORE_UNKNOWN -32767
 
-// Structure for the Transposition Table
-struct HashEntry {
-    U64 key;        // Zobrist key to verify the position
-    int score;      // Evaluation score
-    int depth;      // Depth this position was searched to
-    int flags;      // Type of node (Exact, Alpha, or Beta)
-    Move bestMove;  // Best move found at this position (Critical for Move Ordering)
+struct HashEntry
+{
+	U64 key;
+	int score;
+	int depth;
+	int flags;
+	Move bestMove;
 };
 
-// Table size: 2^20 = ~1 million entries (adjust based on available RAM)
-const int TABLE_SIZE = 1048576;
+const int TABLE_SIZE = 1048576; //2 ^ 20 entries
 
-// Global declarations (defined in search.cpp)
+// EXTERN declarations (Definitions go in search.cpp)
 extern HashEntry transTable[TABLE_SIZE];
 extern U64 pieceArr[12][64];
 extern U64 castleArr[5];

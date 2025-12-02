@@ -13,8 +13,8 @@ public:
 	Move() = default;
 	Move(int from, int to, int piece, int capturedPiece, int specialMove);
 
-	bool operator==(const Move m) const { return move == m.move; }
-	bool operator!=(const Move m) const { return move != m.move; }
+	bool operator==(const Move m) const { return this->move == m.move; }
+	bool operator!=(const Move m) const { return this->move != m.move; }
 
 	int getFrom();
 	int getTo();
