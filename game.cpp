@@ -72,37 +72,17 @@ void Game::startGame()
 					}
 				}
 				makeMove();
-
 				playSound(Sounds::MOVE_SOUND);
-				switch (chess.gameState()) {
-				case DRAW:
-					std::cout << "DRAW\n";
-					break;
-				case WHITE_WIN:
-					std::cout << "WHITE_WIN\n";
-					break;
-				case BLACK_WIN:
-					std::cout << "BLACK_WIN\n";
-					break;
-				}
+				if (chess.gameState() != PLAYING) return;
 
 				switch (settings.mode) {
 				case AI:
 					computer();
 					break;
 				}
+				playSound(Sounds::MOVE_SOUND);
+				if (chess.gameState() != PLAYING) return;
 
-				switch (chess.gameState()) { // duplicate make func
-				case DRAW:
-					std::cout << "DRAW\n";
-					break;
-				case WHITE_WIN:
-					std::cout << "WHITE_WIN\n";
-					break;
-				case BLACK_WIN:
-					std::cout << "BLACK_WIN\n";
-					break;
-				}
 			}
 			else if (event->is<sf::Event::MouseButtonReleased>())
 			{

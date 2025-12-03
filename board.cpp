@@ -418,7 +418,7 @@ void Board::makeMove(Move move)
 		bb[captureGroup] ^= to;
 		bb[wPawn - pieceColor] ^= to;
 		occupied ^= to;
-		piecesCount[bPawn + pieceColor]--;
+		piecesCount[wPawn - pieceColor]--;
 		break;
 	case BISHOP_PROM:
 		bb[piece] ^= to;
@@ -499,7 +499,7 @@ void Board::unMakeMove(Move move, PosInfo posInfo)
 		bb[captureGroup] ^= to;
 		bb[wPawn - pieceColor] ^= to;
 		occupied ^= to;
-		piecesCount[bPawn + pieceColor]++;
+		piecesCount[wPawn - pieceColor]++;
 		break;
 	case BISHOP_PROM:
 		bb[piece] ^= to;

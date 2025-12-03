@@ -23,7 +23,6 @@ inline U64 adjacentFiles(int sq) {
 }
 
 // Knight Attacks (Computed on fly to avoid global variable linker errors)
-// This handles board wrapping correctly (e.g., File H + 1 doesn't become File A)
 U64 evalKnightAttacks(int sq) {
     U64 att = 0;
     U64 b = 1ULL << sq;
@@ -221,7 +220,7 @@ int Board::eval()
     for (int i = 0; i < 12; i++) {
         U64 pieces = bb[i];
         int pieceType = i >> 1; // 0=K, 1=Q, 2=R, 3=B, 4=N, 5=P
-        int side = PCOLOR(i);   // 1=White, 0=Black
+        int side = PCOLOR(i);   // 0=Black, 1=White (Since wPawn=11 is odd)
 
         while (pieces) {
             int pos = bitScanForwardWithReset(pieces);
@@ -250,9 +249,6 @@ int Board::eval()
                     bonus += ISOLATED_PAWN_PENALTY;
 
                 // Passed Pawn
-                // CRITICAL FIX: Board Direction
-                // White moves "North" (Indices decrease to 0) -> Look at bits 0 to pos-1
-                // Black moves "South" (Indices increase to 63) -> Look at bits pos+1 to 63
                 U64 passedMask = (fMask | adjMask);
                 if (side == White) {
                     passedMask &= ((1ULL << pos) - 1); // Bits LOWER than pos
@@ -262,11 +258,6 @@ int Board::eval()
                 }
 
                 if ((passedMask & oppPawns) == 0) {
-                    // White promotes at Rank 0 (idx 0-7), Black at Rank 7 (idx 56-63)
-                    int rank = (side == White) ? (pos / 8) : (7 - (pos / 8));
-                    // Invert rank index because table usually rewards advancement
-                    // Current rank: White at 6 (Start) -> 1 (Promote). Black at 1 -> 6.
-                    // Let's standardize: 0=Start, 7=Promote
                     int advancedRank = (side == White) ? (6 - (pos / 8)) : ((pos / 8) - 1);
                     if (advancedRank >= 0 && advancedRank < 8)
                         bonus += PASSED_PAWN_BONUS[advancedRank];
@@ -275,7 +266,12 @@ int Board::eval()
             else if (pieceType == 0) { // KING
                 // King Safety (Semi-open / Open Files)
                 U64 fMask = fileMask(pos);
-                if ((whitePawns & fMask) == 0) bonus += (blackPawns & fMask) ? SEMI_OPEN_FILE_PENALTY : OPEN_FILE_PENALTY;
+                // FIX: Check MY pawns for defense.
+                U64 myPawns = (side == White) ? whitePawns : blackPawns;
+                U64 oppPawns = (side == White) ? blackPawns : whitePawns;
+
+                if ((myPawns & fMask) == 0)
+                    bonus += (oppPawns & fMask) ? SEMI_OPEN_FILE_PENALTY : OPEN_FILE_PENALTY;
             }
             else { // PIECES (N, B, R, Q)
                 // Mobility
@@ -300,8 +296,10 @@ int Board::eval()
         }
     }
 
+    // Score relative to the side to move
     int midGameScore = midGame[whiteTurn] - midGame[OTHER(whiteTurn)];
     int endGameScore = endGame[whiteTurn] - endGame[OTHER(whiteTurn)];
+
     int midGamePhase = gamePhase;
     if (midGamePhase > 24)
         midGamePhase = 24;

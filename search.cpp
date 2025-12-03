@@ -20,7 +20,7 @@ const int MATE_SCORE = -1000000;
 const int DRAW_SCORE = 0;
 const int MAX_PLY = 128;
 const int INF = 1000000000;
-const int MAX_DEPTH = 64; // Added MAX_DEPTH
+const int MAX_DEPTH = 64;
 
 // Heuristics Arrays
 Move killerMoves[MAX_PLY][2];
@@ -152,8 +152,10 @@ void Board::scoreMoves(MoveList& moveList, int ply)
         int score = 0;
 
         if (move.isCapture()) {
-            // MVV-LVA
-            score = 1000000 + mvv_lva[move.getCapturedPiece()][move.getPiece()];
+            // Assuming getCapturedPiece() returns 0-11, we need 0-5 for array index
+            int victim = move.getCapturedPiece() >> 1;
+            int attacker = move.getPiece() >> 1;
+            score = 1000000 + mvv_lva[victim][attacker];
         }
         else {
             // Killers & History
@@ -312,7 +314,7 @@ Move Board::searchPosition()
 
         auto now = std::chrono::steady_clock::now();
         if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count() >= timeLimit) {
-            if (depth > 1) break;
+            break;
         }
 
         U64 key = ZobristKey();
