@@ -6,23 +6,19 @@
 #include "board.h"
 #include "transpositionTable.h"
 
-// -------------------------------------------------------------------------
-// Global Variables Definition
-// -------------------------------------------------------------------------
+
 HashEntry transTable[TABLE_SIZE];
 U64 pieceArr[12][64];
 U64 castleArr[16];
 U64 epArr[8];
 U64 blackMove;
 
-// Search Constants
 const int MATE_SCORE = -1000000;
 const int DRAW_SCORE = 0;
 const int MAX_PLY = 128;
 const int INF = 1000000000;
 const int MAX_DEPTH = 64;
 
-// Heuristics Arrays
 Move killerMoves[MAX_PLY][2];
 int historyHeuristic[2][64][64];
 
@@ -37,13 +33,8 @@ int mvv_lva[6][6] = {
     {10, 11, 12, 13, 14, 15},   // Victim P
 };
 
-// -------------------------------------------------------------------------
-// Zobrist Hashing & Transposition Table Implementation
-// -------------------------------------------------------------------------
-
 void Board::fillZobristArrs()
 {
-    // Initialize random number generator
     std::random_device rd;
     std::mt19937_64 generator(rd());
     std::uniform_int_distribution<uint64_t> distribution(0, UINT64_MAX);
@@ -65,7 +56,6 @@ void Board::fillZobristArrs()
 
     blackMove = distribution(generator);
 
-    // Clear the Transposition Table
     std::memset(transTable, 0, sizeof(HashEntry) * TABLE_SIZE);
 }
 
@@ -125,9 +115,6 @@ int Board::retrieveHash(int alpha, int beta, int depth)
     return SCORE_UNKNOWN;
 }
 
-// -------------------------------------------------------------------------
-// Move Ordering
-// -------------------------------------------------------------------------
 
 void pickMove(MoveList& moveList, int startIndex) {
     int bestIndex = startIndex;
@@ -147,13 +134,11 @@ void Board::scoreMoves(MoveList& moveList, int ply)
         int score = 0;
 
         if (move.isCapture()) {
-            // Assuming getCapturedPiece() returns 0-11, we need 0-5 for array index
             int victim = move.getCapturedPiece() >> 1;
             int attacker = move.getPiece() >> 1;
             score = 1000000 + mvv_lva[victim][attacker];
         }
         else {
-            // Killers & History
             if (killerMoves[ply][0] == move)
                 score = 900000;
             else if (killerMoves[ply][1] == move)
@@ -165,9 +150,6 @@ void Board::scoreMoves(MoveList& moveList, int ply)
     }
 }
 
-// -------------------------------------------------------------------------
-// Search Implementation
-// -------------------------------------------------------------------------
 
 int Board::quiesce(int alpha, int beta)
 {
@@ -176,7 +158,7 @@ int Board::quiesce(int alpha, int beta)
     if (alpha < standPat) alpha = standPat;
 
     MoveList moveList(218);
-    generateLegalMoves(moveList, true); // captures only
+    generateLegalMoves(moveList, true); 
 
     scoreMoves(moveList, 0);
 
@@ -200,7 +182,6 @@ int Board::alphaBeta(int alpha, int beta, int depthLeft, int ply)
 {
     if (ply >= MAX_PLY) return eval();
 
-    // 1. TT Lookup
     U64 key = ZobristKey();
     HashEntry* ttEntry = &transTable[key & (TABLE_SIZE - 1)];
     bool ttHit = (ttEntry->key == key);
@@ -225,7 +206,6 @@ int Board::alphaBeta(int alpha, int beta, int depthLeft, int ply)
         return DRAW_SCORE;
     }
 
-    // 2. Score Moves
     scoreMoves(moveList, ply);
     if (ttHit && !ttMove.isNone()) {
         for (int i = 0; i < moveList.count; i++) {

@@ -6,11 +6,13 @@
 
 const std::vector<std::string> pieceTypes = { "bk", "wk", "bq", "wq", "br", "wr", "bb", "wb", "bn", "wn", "bp", "wp" };
 
-void drawPieces(sf::RenderWindow& win, Board& board, bool whiteView)
+void drawPieces(sf::RenderWindow& win, Board& board, bool whiteView, int excludeSquare)
 {
 	for (int pieceIndex = 0; pieceIndex < pieceTypes.size(); pieceIndex++) {
 		U64 bitboard = board.getBitboard(pieceIndex);
 		for (int i = 0; i < 64; i++) {
+			if (i == excludeSquare) 
+				continue;
 			if ((bitboard >> i) & 1) {
 				sf::Texture texture;
 				if (!texture.loadFromFile("img/" + pieceTypes[pieceIndex] + ".png")) {
@@ -94,34 +96,71 @@ void drawPossibleMoves(sf::RenderWindow& win, MoveList& moveList, int from, bool
 	}
 }
 
-void drawRanksFiles(sf::RenderWindow& win)
+void drawRanksFiles(sf::RenderWindow& win, bool whiteView)
 {
-	/*sf::Font font;
-	if (!font.loadFromFile("arial.ttf"))
+	static sf::Font font;
+	static bool loaded = false;
+	if (!loaded)
 	{
-		std::cout << "Failed to load font!\n";
+		if (!font.openFromFile("font/Poppins-Bold.ttf"))
+		{
+			std::cout << "Failed to load font: font/Poppins-Bold.ttf\n";
+		}
+		loaded = true;
 	}
-	sf::Text text;
-	for (int i = 1; i <= 8; i++) {
-		text.setFont(font);
-		text.setString("1");
-		text.setCharacterSize(8);
-		text.setFillColor(sf::Color::Black);
-		text.setPosition(SIDE * i - 10, WIN_HEIGHT - 10);
-		window.draw(text);
-	}*/
+
+	sf::Text text(font);
+	text.setCharacterSize(SIDE / 5);
+
+	for (int r = 0; r < 8; r++) {
+		std::string label = whiteView ? std::to_string(8 - r) : std::to_string(r + 1);
+		text.setString(label);
+
+		text.setPosition(sf::Vector2f(3.f, static_cast<float>(r * SIDE) + 3.f));
+
+		if (r % 2 == 0)
+			text.setFillColor(BLACK);
+		else
+			text.setFillColor(WHITE);
+
+		win.draw(text);
+	}
+
+	for (int c = 0; c < 8; c++) {
+		char f = whiteView ? ('a' + c) : ('h' - c);
+		std::string label(1, f);
+		text.setString(label);
+
+		sf::FloatRect bounds = text.getLocalBounds();
+
+		float xPos = static_cast<float>((c + 1) * SIDE) - bounds.size.x - 3.f;
+		float yPos = static_cast<float>(8 * SIDE) - bounds.size.y - 13.f;
+
+		text.setPosition(sf::Vector2f(xPos, yPos));
+
+		if ((c + 7) % 2 == 0)
+			text.setFillColor(BLACK);
+		else
+			text.setFillColor(WHITE);
+
+		win.draw(text);
+	}
 }
 
-void dragPiece(sf::RenderWindow& win, Board& board, sf::Vector2i pos, int squarePos, Piece pieceType)
+void dragPiece(sf::RenderWindow& win, Board& board, sf::Vector2i pos, int squarePos, int pieceIndex)
 {
+	if (pieceIndex < 0 || pieceIndex >= pieceTypes.size()) return;
+
 	sf::Texture texture;
-	if (!texture.loadFromFile("img/" + pieceTypes[pieceType] + ".png")) {
+	if (!texture.loadFromFile("img/" + pieceTypes[pieceIndex] + ".png")) {
 		std::cout << "Cannot load piece img";
 		exit(-1);
 	}
 	texture.setSmooth(true);
 	sf::Sprite piece(texture);
+
+	piece.setOrigin({ SIDE / 2.0f, SIDE / 2.0f });
 	piece.setPosition(sf::Vector2f(pos.x, pos.y));
-	piece.setScale(sf::Vector2f(1.8f, 1.8f));
+	piece.setScale(sf::Vector2f(1.3f, 1.3f));
 	win.draw(piece);
 }

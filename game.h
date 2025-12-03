@@ -16,6 +16,9 @@ struct MoveState
 	int to = -1;
 	int moveIndex = -1;
 	SpecialMove promotion = NONE;
+
+	int draggedPieceIndex = -1;
+	sf::Vector2f dragPos;
 };
 
 class Game
@@ -36,6 +39,7 @@ class Game
 	void makeMove();
 	void unMakeMove();
 	void computer();
+	int getPieceIndexAt(int square);
 	void draw();
 
 

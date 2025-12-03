@@ -6,11 +6,6 @@
 #define PCOLOR(p) ((p) & 1)
 #define FLIP(sq) ((sq) ^ 56)
 
-// -----------------------------------------------------------------------------
-// MASKS & HELPERS
-// -----------------------------------------------------------------------------
-
-// File Masks
 const U64 FileABB = 0x0101010101010101ULL;
 const U64 FileHBB = 0x8080808080808080ULL;
 
@@ -36,10 +31,6 @@ U64 evalKnightAttacks(int sq) {
     if ((b >> 17) & ~FileHBB) att |= (b >> 17);
     return att;
 }
-
-// -----------------------------------------------------------------------------
-// PeSTO TABLES
-// -----------------------------------------------------------------------------
 
 int mg_pawn_table[64] = {
       0,   0,   0,   0,   0,   0,  0,   0,
@@ -195,11 +186,6 @@ void Board::initTables()
     }
 }
 
-// -----------------------------------------------------------------------------
-// EVALUATION
-// -----------------------------------------------------------------------------
-
-// Heuristic Weights
 const int ISOLATED_PAWN_PENALTY = -10;
 const int DOUBLED_PAWN_PENALTY = -15;
 const int PASSED_PAWN_BONUS[8] = { 0, 5, 10, 20, 35, 60, 100, 200 };
@@ -263,17 +249,17 @@ int Board::eval()
                         bonus += PASSED_PAWN_BONUS[advancedRank];
                 }
             }
-            else if (pieceType == 0) { // KING
+            else if (pieceType == 0) {
                 // King Safety (Semi-open / Open Files)
                 U64 fMask = fileMask(pos);
-                // FIX: Check MY pawns for defense.
+
                 U64 myPawns = (side == White) ? whitePawns : blackPawns;
                 U64 oppPawns = (side == White) ? blackPawns : whitePawns;
 
                 if ((myPawns & fMask) == 0)
                     bonus += (oppPawns & fMask) ? SEMI_OPEN_FILE_PENALTY : OPEN_FILE_PENALTY;
             }
-            else { // PIECES (N, B, R, Q)
+            else {
                 // Mobility
                 U64 attacks = 0;
                 U64 friendly = (side == White) ? bb[Whites] : bb[Blacks];
