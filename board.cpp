@@ -4,6 +4,7 @@
 #include "knightMoves.h"
 #include "kingMoves.h"
 #include "slidingPieceMoves.h"
+#include "transpositionTable.h"
 
 Board Board::copy()
 {
@@ -16,6 +17,7 @@ void Board::init()
 	initAttackArrs();
 	initTables();
 	fillZobristArrs();
+	currentHash = ZobristKey();
 	history.clear();
 }
 
@@ -380,9 +382,25 @@ void Board::makeMove(Move move)
 	int pieceColor = move.getPieceColor();
 	int pieceGroup = move.getPieceGroup();
 	int captureGroup = Whites - pieceColor;
-	U64 from = 1ULL << move.getFrom();
-	U64 to = 1ULL << move.getTo();
+
+	int fromSq = move.getFrom();
+	int toSq = move.getTo();
+	U64 from = 1ULL << fromSq;
+	U64 to = 1ULL << toSq;
 	U64 fromTo = from | to;
+
+	currentHash ^= blackMove;
+
+	currentHash ^= castleArr[castlingRights];
+	if (enPassantSquare != 0) {
+		currentHash ^= epArr[enPassantSquare % 8];
+	}
+
+	currentHash ^= pieceArr[piece][fromSq];
+	if (move.isCapture() && move.getSpecialMove() != EN_PASSANT) {
+		currentHash ^= pieceArr[capture][toSq];
+	}
+
 	bb[piece] ^= fromTo;
 	bb[pieceGroup] ^= fromTo;
 	if (move.isCapture()) {
@@ -406,80 +424,147 @@ void Board::makeMove(Move move)
 		removeCastlingRight(bKingSide);
 		removeCastlingRight(bQueenSide);
 	}
- 
+
 	switch (move.getSpecialMove()) {
 	case DOUBLE_PUSH:
 		enPassantSquare = move.getTo();
 		break;
 	case KING_CASTLING:
+	{
 		from <<= 3;
 		to >>= 1;
 		fromTo = from | to;
 		bb[bRook + pieceColor] ^= fromTo;
 		bb[pieceGroup] ^= fromTo;
 		occupied ^= fromTo;
-		break;
+
+		int oldRookSq, newRookSq;
+		if (toSq == 62) { oldRookSq = 63; newRookSq = 61; }      // White KingSide (g1)
+		else if (toSq == 58) { oldRookSq = 56; newRookSq = 59; } // White QueenSide (c1)
+		else if (toSq == 6) { oldRookSq = 7; newRookSq = 5; }    // Black KingSide (g8)
+		else { oldRookSq = 0; newRookSq = 3; }                   // Black QueenSide (c8)
+		Piece rookPiece = (Piece)(bRook + pieceColor);
+		currentHash ^= pieceArr[rookPiece][oldRookSq];
+		currentHash ^= pieceArr[rookPiece][newRookSq];
+	}
+	break;
 	case QUEEN_CASTLING:
+	{
 		from >>= 4;
 		to <<= 1;
 		fromTo = from | to;
 		bb[bRook + pieceColor] ^= fromTo;
 		bb[pieceGroup] ^= fromTo;
 		occupied ^= fromTo;
-		break;
+
+		int oldRookSq, newRookSq;
+		if (toSq == 62) { oldRookSq = 63; newRookSq = 61; }
+		else if (toSq == 58) { oldRookSq = 56; newRookSq = 59; }
+		else if (toSq == 6) { oldRookSq = 7; newRookSq = 5; }
+		else { oldRookSq = 0; newRookSq = 3; }
+		Piece rookPiece = (Piece)(bRook + pieceColor);
+		currentHash ^= pieceArr[rookPiece][oldRookSq];
+		currentHash ^= pieceArr[rookPiece][newRookSq];
+	}
+	break;
 	case EN_PASSANT:
+	{
 		to = 1ULL << ((move.getTo() < 32) ? move.getTo() + 8 : move.getTo() - 8);
 		bb[captureGroup] ^= to;
 		bb[wPawn - pieceColor] ^= to;
 		occupied ^= to;
 		piecesCount[wPawn - pieceColor]--;
-		break;
+
+		int capSq = (move.getTo() < 32) ? move.getTo() + 8 : move.getTo() - 8;
+		Piece victimPawn = (Piece)(wPawn - pieceColor);
+		currentHash ^= pieceArr[victimPawn][capSq];
+	}
+	break;
 	case BISHOP_PROM:
 		bb[piece] ^= to;
 		bb[bBishop + pieceColor] ^= to;
 		piecesCount[bBishop + pieceColor]++;
+
+		currentHash ^= pieceArr[bBishop + pieceColor][toSq];
 		break;
 	case KNIGHT_PROM:
 		bb[piece] ^= to;
 		bb[bKnight + pieceColor] ^= to;
 		piecesCount[bKnight + pieceColor]++;
+
+		currentHash ^= pieceArr[bKnight + pieceColor][toSq];
 		break;
 	case ROOK_PROM:
 		bb[piece] ^= to;
 		bb[bRook + pieceColor] ^= to;
 		piecesCount[bRook + pieceColor]++;
+
+		currentHash ^= pieceArr[bRook + pieceColor][toSq];
 		break;
 	case QUEEN_PROM:
 		bb[piece] ^= to;
 		bb[bQueen + pieceColor] ^= to;
 		piecesCount[bQueen + pieceColor]++;
+
+		currentHash ^= pieceArr[bQueen + pieceColor][toSq];
 		break;
 	}
+
+	if (move.getSpecialMove() != KNIGHT_PROM && move.getSpecialMove() != BISHOP_PROM &&
+		move.getSpecialMove() != ROOK_PROM && move.getSpecialMove() != QUEEN_PROM) {
+		currentHash ^= pieceArr[piece][toSq];
+	}
+
 	if (move.getSpecialMove() != DOUBLE_PUSH) {
 		enPassantSquare = 0;
 	}
+
+	currentHash ^= castleArr[castlingRights];
+	if (enPassantSquare != 0) {
+		currentHash ^= epArr[enPassantSquare % 8];
+	}
+
 	if (piece == wPawn || piece == bPawn || capture == wPawn || capture == bPawn)
 		halfMoveClock = 0;
 	else
 		halfMoveClock++;
 	if (!whiteTurn)
 		fullMoveCounter++;
-	history.push_back(ZobristKey());
+
+	history.push_back(currentHash);
 	changeTurn();
 }
 
 void Board::unMakeMove(Move move, PosInfo posInfo)
 {
+	currentHash ^= blackMove;
+	currentHash ^= castleArr[castlingRights];
+	if (enPassantSquare != 0) currentHash ^= epArr[enPassantSquare % 8];
+
 	halfMoveClock = posInfo.getHalfMoveClock();
 	castlingRights = posInfo.getCastlingRights();
 	enPassantSquare = posInfo.getEpSquare();
+
+	currentHash ^= castleArr[castlingRights];
+	if (enPassantSquare != 0) currentHash ^= epArr[enPassantSquare % 8];
+
 	Piece piece = (Piece)move.getPiece();
 	int pieceColor = move.getPieceColor();
 	int pieceGroup = move.getPieceGroup();
 	int captureGroup = Whites - pieceColor;
-	U64 from = 1ULL << move.getFrom();
-	U64 to = 1ULL << move.getTo();
+
+	int fromSq = move.getFrom();
+	int toSq = move.getTo();
+	U64 from = 1ULL << fromSq;
+	U64 to = 1ULL << toSq;
 	U64 fromTo = from | to;
+
+	if (move.getSpecialMove() != KNIGHT_PROM && move.getSpecialMove() != BISHOP_PROM &&
+		move.getSpecialMove() != ROOK_PROM && move.getSpecialMove() != QUEEN_PROM) {
+		currentHash ^= pieceArr[piece][toSq];
+	}
+	currentHash ^= pieceArr[piece][fromSq];
+
 	bb[piece] ^= fromTo;
 	bb[pieceGroup] ^= fromTo;
 	if (move.isCapture()) {
@@ -488,58 +573,101 @@ void Board::unMakeMove(Move move, PosInfo posInfo)
 		bb[captureGroup] ^= to;
 		occupied ^= from;
 		piecesCount[capture]++;
+
+		if (move.getSpecialMove() != EN_PASSANT) {
+			currentHash ^= pieceArr[capture][toSq];
+		}
 	}
 	else {
 		occupied ^= fromTo;
 	}
-	switch (move.getSpecialMove()) {;
+	switch (move.getSpecialMove()) {
+		;
 	case KING_CASTLING:
+	{
 		from <<= 1;
 		to <<= 1;
 		fromTo = from | to;
 		bb[bRook + pieceColor] ^= fromTo;
 		bb[pieceGroup] ^= fromTo;
 		occupied ^= fromTo;
-		break;
+
+		int oldRookSq, newRookSq;
+		if (toSq == 62) { oldRookSq = 63; newRookSq = 61; }
+		else if (toSq == 58) { oldRookSq = 56; newRookSq = 59; }
+		else if (toSq == 6) { oldRookSq = 7; newRookSq = 5; }
+		else { oldRookSq = 0; newRookSq = 3; }
+		Piece rookPiece = (Piece)(bRook + pieceColor);
+		currentHash ^= pieceArr[rookPiece][oldRookSq];
+		currentHash ^= pieceArr[rookPiece][newRookSq];
+	}
+	break;
 	case QUEEN_CASTLING:
+	{
 		from >>= 4;
 		to <<= 1;
 		fromTo = from | to;
 		bb[bRook + pieceColor] ^= fromTo;
 		bb[pieceGroup] ^= fromTo;
 		occupied ^= fromTo;
-		break;
+
+		int oldRookSq, newRookSq;
+		if (toSq == 62) { oldRookSq = 63; newRookSq = 61; }
+		else if (toSq == 58) { oldRookSq = 56; newRookSq = 59; }
+		else if (toSq == 6) { oldRookSq = 7; newRookSq = 5; }
+		else { oldRookSq = 0; newRookSq = 3; }
+		Piece rookPiece = (Piece)(bRook + pieceColor);
+		currentHash ^= pieceArr[rookPiece][oldRookSq];
+		currentHash ^= pieceArr[rookPiece][newRookSq];
+	}
+	break;
 	case EN_PASSANT:
+	{
 		to = 1ULL << ((move.getTo() < 32) ? move.getTo() + 8 : move.getTo() - 8);
 		bb[captureGroup] ^= to;
 		bb[wPawn - pieceColor] ^= to;
 		occupied ^= to;
 		piecesCount[wPawn - pieceColor]++;
-		break;
+
+		int capSq = (move.getTo() < 32) ? move.getTo() + 8 : move.getTo() - 8;
+		Piece victimPawn = (Piece)(wPawn - pieceColor);
+		currentHash ^= pieceArr[victimPawn][capSq];
+	}
+	break;
 	case BISHOP_PROM:
 		bb[piece] ^= to;
 		bb[bBishop + pieceColor] ^= to;
 		piecesCount[bBishop + pieceColor]--;
+
+		currentHash ^= pieceArr[bBishop + pieceColor][toSq];
 		break;
 	case KNIGHT_PROM:
 		bb[piece] ^= to;
 		bb[bKnight + pieceColor] ^= to;
 		piecesCount[bKnight + pieceColor]--;
+
+		currentHash ^= pieceArr[bKnight + pieceColor][toSq];
 		break;
 	case ROOK_PROM:
 		bb[piece] ^= to;
 		bb[bRook + pieceColor] ^= to;
 		piecesCount[bRook + pieceColor]--;
+
+		currentHash ^= pieceArr[bRook + pieceColor][toSq];
 		break;
 	case QUEEN_PROM:
 		bb[piece] ^= to;
 		bb[bQueen + pieceColor] ^= to;
 		piecesCount[bQueen + pieceColor]--;
+
+		currentHash ^= pieceArr[bQueen + pieceColor][toSq];
 		break;
 	}
 	if (!whiteTurn)
 		fullMoveCounter--;
+
 	history.pop_back();
+
 	changeTurn();
 }
 

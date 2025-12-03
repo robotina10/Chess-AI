@@ -26,7 +26,7 @@ void Game::init()
 void Game::startGame()
 {
 	init();
-	//std::thread perftThread(getPerftWithTime, chess.board, 6);
+	std::thread perftThread(getPerftWithTime, chess.board, 6);
 	//std::thread perftThread(perftTestDefaultFen);
 	//Debugger dbg;
 	//dbg.comparePerft(chess.board, 5, "stockfish.exe");

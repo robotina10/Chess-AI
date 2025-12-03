@@ -73,7 +73,6 @@ U64 Board::ZobristKey()
 {
     U64 key = 0;
 
-    // Hash pieces
     for (int i = 0; i < 12; i++) {
         U64 pieces = bb[i];
         while (pieces) {
@@ -82,15 +81,12 @@ U64 Board::ZobristKey()
         }
     }
 
-    // Hash turn
     if (!whiteTurn) {
         key ^= blackMove;
     }
 
-    // Hash castling rights
     key ^= castleArr[castlingRights];
 
-    // Hash en passant
     if (enPassantSquare) {
         key ^= epArr[enPassantSquare % 8];
     }
@@ -98,7 +94,6 @@ U64 Board::ZobristKey()
     return key;
 }
 
-// Interface method called by board.h (Legacy support)
 void Board::recordHash(int val, int hashFlag, int depth)
 {
     U64 key = ZobristKey();

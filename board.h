@@ -64,6 +64,7 @@ class Board {
 	int fullMoveCounter = 1;
 
 	std::vector<U64> history;
+	U64 currentHash = 0;
 
 	void getPawnPushCapturesMoves(int color, MoveList& moveList, U64 pawns, U64 empty, U64 checkingPieces, bool capturesOnly);
 	void getMovesFromPawnCaptureBB(MoveList& moveList, U64 bb, Piece piece, int captureDistance);
