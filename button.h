@@ -5,6 +5,7 @@
 
 class Button : public sf::Drawable
 {
+protected:
 	sf::RectangleShape rect;
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const { target.draw(rect); }
 public:
@@ -13,7 +14,8 @@ public:
 
 	Button() {}
 	Button(sf::Vector2f pos) {
-		rect.setPosition(pos); }
+		rect.setPosition(pos);
+	}
 	sf::Vector2f getPos() { return rect.getGlobalBounds().position; }
 	sf::Vector2f getSize() { return rect.getGlobalBounds().size; }
 
@@ -21,7 +23,7 @@ public:
 	{
 		auto btn = rect.getGlobalBounds();
 		return mousePos.x >= btn.position.x && mousePos.x <= btn.position.x + btn.size.x &&
-		       mousePos.y >= btn.position.y && mousePos.y <= btn.position.y + btn.size.y;
+			mousePos.y >= btn.position.y && mousePos.y <= btn.position.y + btn.size.y;
 	}
 };
 
@@ -35,15 +37,14 @@ class textButton : public Button
 	}
 public:
 	textButton(std::string s, sf::Font& font, sf::Vector2f pos, int charSize, sf::Color textColor)
-		// SFML 3: sf::Text constructor now takes (font, string, size)
 		: Button(pos), text(font, s, charSize)
 	{
 		text.setPosition(pos);
 		text.setFillColor(textColor);
-		text.setStyle(sf::Text::Bold); //
+		text.setStyle(sf::Text::Bold);
 	}
 
-	void setRect(sf::Vector2f posOffset, sf::Vector2f sizeOffset, sf::Color fillCol, float outlineThickness, sf::Color outlineCol, bool center=false)
+	void setRect(sf::Vector2f posOffset, sf::Vector2f sizeOffset, sf::Color fillCol, float outlineThickness, sf::Color outlineCol, bool center = false)
 	{
 		rect.setFillColor(fillCol);
 		rect.setOutlineThickness(outlineThickness);
@@ -71,23 +72,46 @@ class imgButton : public Button
 {
 	sf::Texture texture;
 	sf::Sprite sprite;
+
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const
 	{
 		target.draw(rect);
 		target.draw(sprite);
 	}
+
 public:
-	imgButton(std::string imgName, sf::Vector2f pos, float scaleX=1, float scaleY=1) : Button(pos), texture(), sprite(texture)
+	imgButton(std::string imgName, sf::Vector2f pos, float scaleX = 1, float scaleY = 1)
+		: Button(pos), texture(), sprite(texture)
 	{
 		if (!texture.loadFromFile(imgName)) {
 			std::cout << "Cannot load texture: " << imgName << '\n';
 			exit(-1);
 		}
 		texture.setSmooth(true);
-	sprite.setTexture(texture);
+
+		sprite.setTexture(texture, true);
+
 		sprite.setPosition(pos);
-		// SFML 3: Transformable::setScale now takes a Vector2f
 		sprite.setScale(sf::Vector2f(scaleX, scaleY));
+
+		rect.setPosition(pos);
+		rect.setSize(sprite.getGlobalBounds().size);
+
+	}
+
+	imgButton(const imgButton& other) : Button(other), texture(other.texture), sprite(other.sprite)
+	{
+		sprite.setTexture(texture); 
+	}
+
+	imgButton& operator=(const imgButton& other) {
+		if (this != &other) {
+			Button::operator=(other);
+			texture = other.texture;
+			sprite = other.sprite; 
+			sprite.setTexture(texture); 
+		}
+		return *this;
 	}
 
 	void setRect(sf::Vector2f posOffset, sf::Vector2f sizeOffset, sf::Color fillCol, float outlineThickness, sf::Color outlineCol)
@@ -95,18 +119,21 @@ public:
 		rect.setFillColor(fillCol);
 		rect.setOutlineThickness(outlineThickness);
 		rect.setOutlineColor(outlineCol);
-		sf::Vector2f size = sprite.getGlobalBounds().size;
-		rect.setSize(size + sizeOffset);
 
-		sf::Vector2f pos = sprite.getGlobalBounds().position;
-		rect.setPosition(pos + posOffset);
-		sprite.setPosition(pos + posOffset);
+		sf::Vector2f spriteSize = sprite.getGlobalBounds().size;
+		rect.setSize(spriteSize + sizeOffset);
 
+		sf::Vector2f currentPos = sprite.getPosition();
+		sf::Vector2f newPos = currentPos + posOffset;
+
+		sprite.setPosition(newPos);
+		rect.setPosition(newPos);
 	}
 
 	void setPos(sf::Vector2f pos)
 	{
 		sprite.setPosition(pos);
+		rect.setPosition(pos);
 	}
 
 	sf::Vector2f getPos()

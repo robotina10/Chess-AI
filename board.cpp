@@ -16,6 +16,7 @@ void Board::init()
 	initAttackArrs();
 	initTables();
 	fillZobristArrs();
+	history.clear();
 }
 
 U64 northOne(U64 b) { return b >> 8; }
@@ -129,11 +130,15 @@ bool Board::fiftyMoveRule()
 
 bool Board::threeFoldRepetitionRule()
 {
-	int count = 0;
-	U64 currentHash = ZobristKey();
+	if (history.empty()) return false;
 
-	for (int i = history.size() - 2; i >= 0; i -= 2) {
-		if (history[i] == currentHash) {
+	int count = 0;
+	U64 currentHash = history.back();
+
+	int limit = std::min((int)history.size() - 1, halfMoveClock);
+
+	for (int i = 2; i <= limit; i += 2) {
+		if (history[history.size() - 1 - i] == currentHash) {
 			count++;
 			if (count >= 2) return true;
 		}
@@ -566,7 +571,7 @@ void Board::setCastlingRight(CastlingRights right) { castlingRights |= right; }
 
 Piece Board::getPiece(int pos)
 {
-	if (!((1ULL << pos) && occupied))
+	if (!((1ULL << pos) & occupied))
 		return EMPTY;
 
 	if ((bb[Whites] & (1ULL << pos)) >> pos) {
@@ -576,7 +581,7 @@ Piece Board::getPiece(int pos)
 		}
 	}
 	if ((bb[Blacks] & (1ULL << pos)) >> pos) {
-		for (int i = 0; i < 10; i+=2) {
+		for (int i = 0; i <= 10; i+=2) {
 			if ((bb[i] & (1ULL << pos)))
 				return (Piece)i;
 		}

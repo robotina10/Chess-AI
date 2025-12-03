@@ -4,11 +4,9 @@
 #include <vector>
 #include "constants.h"
 
-// Forward declarations
 class Board;
 struct MoveList;
 
-// Function declarations
 void dragPiece(sf::RenderWindow& win, Board& board, sf::Vector2i pos, int squarePos, Piece pieceType);
 void drawPieces(sf::RenderWindow& win, Board& board, bool whiteView);
 void drawBoard(sf::RenderWindow& win);

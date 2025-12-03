@@ -4,7 +4,6 @@
 #include <iostream>
 #include <cstdlib>
 
-// Definition of pieceTypes - moved from header to avoid multiple definitions
 const std::vector<std::string> pieceTypes = { "bk", "wk", "bq", "wq", "br", "wr", "bb", "wb", "bn", "wn", "bp", "wp" };
 
 void drawPieces(sf::RenderWindow& win, Board& board, bool whiteView)
@@ -41,7 +40,6 @@ void drawBoard(sf::RenderWindow& win)
 	sf::RectangleShape rect(sf::Vector2f(SIDE, SIDE));
 	for (int i = 0; i < ROWS; i++) {
 		for (int j = 0; j < COLS; j++) {
-			// SFML 3: setPosition takes a Vector2f instead of two scalars
 			rect.setPosition(sf::Vector2f(i * SIDE, j * SIDE));
 			if ((i + j) % 2 == 0) {
 				rect.setFillColor(WHITE);
@@ -63,7 +61,7 @@ void highlightSquare(sf::RenderWindow& win, Board& board, int squarePos, bool wh
 		squarePos = 63 - squarePos;
 	int y = (squarePos / 8);
 	int x = (squarePos % 8);
-	// SFML 3: setPosition takes a Vector2f instead of two scalars
+
 	rect.setPosition(sf::Vector2f(x * SIDE, y * SIDE));
 
 	if ((x + y) % 2 == 0)
@@ -85,7 +83,7 @@ void drawPossibleMoves(sf::RenderWindow& win, MoveList& moveList, int from, bool
 			int y = to / 8;
 			int x = to % 8;
 			rect.setFillColor(sf::Color::Red);
-			// SFML 3: setPosition takes a Vector2f instead of two scalars
+
 			rect.setPosition(sf::Vector2f(x * SIDE, y * SIDE));
 			if ((moveList.moves[i].getFrom() % 8 + moveList.moves[i].getFrom() | 8 + x + y) % 2 == 0)
 				rect.setFillColor(HIGHLIGHTED_WHITE);

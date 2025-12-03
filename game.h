@@ -2,6 +2,7 @@
 #include <thread>
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
+#include <optional>
 #include "chessEngine.h"
 #include "button.h"
 
@@ -24,12 +25,13 @@ class Game
 	Settings settings;
 	MoveState moveState;
 
+	std::optional<sf::Sound> soundPlayer;
 	imgButton promSelectionBtn;
 	SpecialMove promPieceSelected(sf::Vector2f btnPos, int squareClicked);
 
 	void init();
 	int calcSquarePos(sf::Vector2i pos);
-	void playSound(Sounds soundType);
+	void playSound();
 	int getMoveIndex();
 	void makeMove();
 	void unMakeMove();

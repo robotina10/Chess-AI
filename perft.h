@@ -22,7 +22,7 @@ long long Perft(Board board, int depth, int maxDepth)
 		//board = b;
 		if (depth == maxDepth) {
 			
-			std::cout << moveList.moves[i].getStr() << " :" << c << "\n";
+			//std::cout << moveList.moves[i].getStr() << " :" << c << "\n";
 		}
 		count += c;
 		//count += Perft(board, depth - 1, maxDepth);

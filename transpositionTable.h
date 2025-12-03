@@ -17,7 +17,6 @@ struct HashEntry
 
 const int TABLE_SIZE = 1048576; //2 ^ 20 entries
 
-// EXTERN declarations (Definitions go in search.cpp)
 extern HashEntry transTable[TABLE_SIZE];
 extern U64 pieceArr[12][64];
 extern U64 castleArr[16];

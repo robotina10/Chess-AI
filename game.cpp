@@ -4,6 +4,7 @@
 #include "game.h"
 #include "perft.h"
 #include "draw.h"
+#include "debug.h"
 
 sf::SoundBuffer soundCaptureBuffer;
 sf::SoundBuffer soundMoveBuffer;
@@ -26,7 +27,10 @@ void Game::startGame()
 {
 	init();
 	//std::thread perftThread(getPerftWithTime, chess.board, 6);
-	//perftTestDefaultFen();
+	//std::thread perftThread(perftTestDefaultFen);
+	//Debugger dbg;
+	//dbg.comparePerft(chess.board, 5, "stockfish.exe");
+
 	chess.board.generateLegalMoves(chess.moveList);
 	while (win.isOpen())
 	{
@@ -72,16 +76,17 @@ void Game::startGame()
 					}
 				}
 				makeMove();
-				playSound(Sounds::MOVE_SOUND);
+				draw();
+				playSound();
 				if (chess.gameState() != PLAYING) return;
 
 				switch (settings.mode) {
 				case AI:
 					computer();
+					playSound();
+					if (chess.gameState() != PLAYING) return;
 					break;
 				}
-				playSound(Sounds::MOVE_SOUND);
-				if (chess.gameState() != PLAYING) return;
 
 			}
 			else if (event->is<sf::Event::MouseButtonReleased>())
@@ -104,16 +109,22 @@ void Game::startGame()
 	}
 }
 
-void Game::playSound(Sounds soundType)
+void Game::playSound()
 {
-	if (soundType == Sounds::CAPTURE_SOUND) {
-		sf::Sound sound(soundCaptureBuffer);
-		sound.play();
+	sf::SoundBuffer* targetBuffer = nullptr;
+
+	if (chess.playedMoves[chess.playedMoves.size() - 1].move.isCapture() || chess.playedMoves[chess.playedMoves.size() - 1].move.getSpecialMove() == EN_PASSANT) {
+		targetBuffer = &soundCaptureBuffer;
 	}
-	else if (soundType == Sounds::MOVE_SOUND) {
-		sf::Sound sound(soundMoveBuffer);
-		sound.play();
+	else {
+		targetBuffer = &soundMoveBuffer;
 	}
+	if (soundPlayer.has_value())
+		soundPlayer->setBuffer(*targetBuffer);
+	else {
+		soundPlayer.emplace(*targetBuffer);
+	}
+	soundPlayer->play();
 }
 
 SpecialMove Game::promPieceSelected(sf::Vector2f btnPos, int squareClicked)
