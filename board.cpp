@@ -129,6 +129,15 @@ bool Board::fiftyMoveRule()
 
 bool Board::threeFoldRepetitionRule()
 {
+	int count = 0;
+	U64 currentHash = ZobristKey();
+
+	for (int i = history.size() - 2; i >= 0; i -= 2) {
+		if (history[i] == currentHash) {
+			count++;
+			if (count >= 2) return true;
+		}
+	}
 	return false;
 }
 
@@ -450,6 +459,7 @@ void Board::makeMove(Move move)
 		halfMoveClock++;
 	if (!whiteTurn)
 		fullMoveCounter++;
+	history.push_back(ZobristKey());
 	changeTurn();
 }
 
@@ -487,8 +497,8 @@ void Board::unMakeMove(Move move, PosInfo posInfo)
 		occupied ^= fromTo;
 		break;
 	case QUEEN_CASTLING:
-		from <<= 4;
-		to >>= 1;
+		from >>= 4;
+		to <<= 1;
 		fromTo = from | to;
 		bb[bRook + pieceColor] ^= fromTo;
 		bb[pieceGroup] ^= fromTo;
@@ -524,6 +534,7 @@ void Board::unMakeMove(Move move, PosInfo posInfo)
 	}
 	if (!whiteTurn)
 		fullMoveCounter--;
+	history.pop_back();
 	changeTurn();
 }
 

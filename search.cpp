@@ -11,7 +11,7 @@
 // -------------------------------------------------------------------------
 HashEntry transTable[TABLE_SIZE];
 U64 pieceArr[12][64];
-U64 castleArr[5];
+U64 castleArr[16];
 U64 epArr[8];
 U64 blackMove;
 
@@ -24,7 +24,7 @@ const int MAX_DEPTH = 64;
 
 // Heuristics Arrays
 Move killerMoves[MAX_PLY][2];
-int history[2][64][64];
+int historyHeuristic[2][64][64];
 
 // MVV-LVA: Most Valuable Victim - Least Valuable Attacker
 // (Victim: P, N, B, R, Q, K) x (Attacker: P, N, B, R, Q, K)
@@ -55,7 +55,7 @@ void Board::fillZobristArrs()
     }
 
     castleArr[0] = 0;
-    for (int i = 1; i < 5; i++) {
+    for (int i = 1; i < 16; i++) {
         castleArr[i] = distribution(generator);
     }
 
@@ -164,7 +164,7 @@ void Board::scoreMoves(MoveList& moveList, int ply)
             else if (killerMoves[ply][1] == move)
                 score = 800000;
             else
-                score = history[move.getPieceColor()][move.getTo()][move.getFrom()];
+                score = historyHeuristic[move.getPieceColor()][move.getTo()][move.getFrom()];
         }
         moveList.scores[i] = score;
     }
@@ -280,7 +280,7 @@ int Board::alphaBeta(int alpha, int beta, int depthLeft, int ply)
             if (!move.isCapture()) {
                 killerMoves[ply][1] = killerMoves[ply][0];
                 killerMoves[ply][0] = move;
-                history[move.getPieceColor()][move.getTo()][move.getFrom()] += depthLeft * depthLeft;
+                historyHeuristic[move.getPieceColor()][move.getTo()][move.getFrom()] += depthLeft * depthLeft;
             }
             return beta;
         }
@@ -307,7 +307,7 @@ Move Board::searchPosition()
     int beta = INF;
 
     std::memset(killerMoves, 0, sizeof(killerMoves));
-    std::memset(history, 0, sizeof(history));
+    std::memset(historyHeuristic, 0, sizeof(historyHeuristic));
 
     for (int depth = 1; depth <= MAX_DEPTH; depth++) {
         int score = alphaBeta(alpha, beta, depth, 0);
