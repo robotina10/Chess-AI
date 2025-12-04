@@ -115,13 +115,37 @@ bool Board::isStalemate(int moveListCount)
 	return !moveListCount && !isCheck();
 }
 
-bool Board::isDraw(int moveListCount) // not sure about fifty move rule if it can be evalueted immediatly as draw, there is also some fide rule
+bool Board::isDraw(int moveListCount)
 {
 	return fiftyMoveRule() || threeFoldRepetitionRule() || isStalemate(moveListCount) || isDrawByMaterial();
 }
 
 bool Board::isDrawByMaterial()
 {
+	if (piecesCount[wPawn] || piecesCount[bPawn] ||
+		piecesCount[wRook] || piecesCount[bRook] ||
+		piecesCount[wQueen] || piecesCount[bQueen]) {
+		return false;
+	}
+
+	int wMinors = piecesCount[wKnight] + piecesCount[wBishop];
+	int bMinors = piecesCount[bKnight] + piecesCount[bBishop];
+	int totalMinors = wMinors + bMinors;
+
+	if (totalMinors <= 1) {
+		return true;
+	}
+	if (totalMinors == 2 && piecesCount[wBishop] == 1 && piecesCount[bBishop] == 1) {
+		int wBishopSq = bitScanForward(bb[wBishop]);
+		int bBishopSq = bitScanForward(bb[bBishop]);
+
+		bool wSqColor = ((wBishopSq / 8) + (wBishopSq % 8)) % 2 != 0;
+		bool bSqColor = ((bBishopSq / 8) + (bBishopSq % 8)) % 2 != 0;
+
+		if (wSqColor == bSqColor) {
+			return true;
+		}
+	}
 	return false;
 }
 

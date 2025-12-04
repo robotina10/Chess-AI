@@ -29,8 +29,11 @@ class Game
 	MoveState moveState;
 
 	std::optional<sf::Sound> soundPlayer;
-	imgButton promSelectionBtn;
-	SpecialMove promPieceSelected(sf::Vector2f btnPos, int squareClicked);
+
+	SpecialMove selectPromotion(int toSquare);
+
+	sf::Font font;
+	bool handleGameOver();
 
 	void init();
 	int calcSquarePos(sf::Vector2i pos);
@@ -44,6 +47,6 @@ class Game
 
 
 public:
-	Game(sf::RenderWindow& win, Settings settings) : win(win), settings(settings), promSelectionBtn("img/prom.png", { 0, 0 }, 1.17, 1.183) {}
+	Game(sf::RenderWindow& win, Settings settings) : win(win), settings(settings) {}
 	void startGame();
 };

@@ -75,6 +75,7 @@ void MainMenu::run()
 					settings.mode = AI;
 				}
 				else if (playBtn.isClicked(pos)) {
+					isComplete = true;
 					return;
 				}
 			}

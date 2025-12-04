@@ -10,7 +10,7 @@ public:
     Board board;
     MoveList moveList;
     std::vector<Position> playedMoves;
-    ChessEngine() : moveList(218) { playedMoves.resize(300); board.init(); }
+    ChessEngine() : moveList(218) { board.init(); }
 
     State gameState() {
         if (board.isCheckmate(moveList.count))

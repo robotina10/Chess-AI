@@ -54,7 +54,7 @@ void drawBoard(sf::RenderWindow& win)
 	}
 }
 
-void highlightSquare(sf::RenderWindow& win, Board& board, int squarePos, bool whiteView)
+void highlightSquare(sf::RenderWindow& win, Board& board, int squarePos, bool whiteView, sf::Color whiteCol, sf::Color blackCol)
 {
 	if (squarePos == -1)
 		return;
@@ -67,9 +67,9 @@ void highlightSquare(sf::RenderWindow& win, Board& board, int squarePos, bool wh
 	rect.setPosition(sf::Vector2f(x * SIDE, y * SIDE));
 
 	if ((x + y) % 2 == 0)
-		rect.setFillColor(HIGHLIGHTED_WHITE);
+		rect.setFillColor(whiteCol);
 	else
-		rect.setFillColor(HIGHLIGHTED_BLACK);
+		rect.setFillColor(blackCol);
 	win.draw(rect);
 }
 

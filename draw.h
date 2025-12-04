@@ -13,7 +13,7 @@ void dragPiece(sf::RenderWindow& win, Board& board, sf::Vector2i pos, int square
 
 void drawBoard(sf::RenderWindow& win);
 
-void highlightSquare(sf::RenderWindow& win, Board& board, int squarePos, bool whiteView);
+void highlightSquare(sf::RenderWindow& win, Board& board, int squarePos, bool whiteView, sf::Color whiteCol, sf::Color blackCol);
 
 void drawPossibleMoves(sf::RenderWindow& win, MoveList& moveList, int from, bool whiteView);
 
