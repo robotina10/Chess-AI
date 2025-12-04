@@ -66,6 +66,9 @@ public:
 		pos = text.getGlobalBounds().position;
 		rect.setPosition(pos + posOffset);
 	}
+	void setFillColor(sf::Color color) {
+		rect.setFillColor(color);
+	}
 };
 
 class imgButton : public Button
@@ -139,5 +142,12 @@ public:
 	sf::Vector2f getPos()
 	{
 		return sprite.getPosition();
+	}
+	void setOutlineColor(sf::Color color) {
+		rect.setOutlineColor(color);
+	}
+
+	void setFillColor(sf::Color color) {
+		rect.setFillColor(color);
 	}
 };

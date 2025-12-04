@@ -17,6 +17,9 @@ class MainMenu
 	imgButton blackBtn;
 	imgButton randomBtn;
 
+	// 0 = White, 1 = Black, 2 = Random
+	int selectedSide = 0;
+
 	void setupButtons();
 public:
 	bool isComplete = false;

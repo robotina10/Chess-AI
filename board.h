@@ -26,9 +26,7 @@ typedef struct Line
 	Move moveLine[lineSize];
 };
 
-//const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const std::string defaultFEN = "5b2/8/8/4k3/8/8/4K3/2B5 w - - 0 1";
-
+const std::string defaultFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 const U64 notAFile = ~0x0101010101010101;
 const U64 notHFile = ~0x8080808080808080;

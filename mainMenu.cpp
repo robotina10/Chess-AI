@@ -21,6 +21,7 @@ MainMenu::MainMenu(sf::RenderWindow& win) : win(win),
 		exit(1);
 	}
 	setupButtons();
+	selectedSide = 0;
 }
 
 void MainMenu::setupButtons()
@@ -45,8 +46,38 @@ void MainMenu::run()
 {
 	srand(time(0));
 
+	const sf::Color normalColor(245, 245, 245);
+	const sf::Color hoverColor(200, 200, 200);
+	const sf::Color selectedOutline(0, 0, 0);
+	const sf::Color normalOutline(200, 200, 200);
+
 	while (win.isOpen()) 
 	{
+		sf::Vector2i mousePos = sf::Mouse::getPosition(win);
+
+		if (multiplayerBtn.isClicked(mousePos)) multiplayerBtn.setFillColor(hoverColor);
+		else multiplayerBtn.setFillColor(normalColor);
+
+		if (computerBtn.isClicked(mousePos)) computerBtn.setFillColor(hoverColor);
+		else computerBtn.setFillColor(normalColor);
+
+		if (playBtn.isClicked(mousePos)) playBtn.setFillColor(hoverColor);
+		else playBtn.setFillColor(normalColor);
+
+		if (whiteBtn.isClicked(mousePos)) whiteBtn.setFillColor(hoverColor);
+		else whiteBtn.setFillColor(normalColor);
+
+		if (blackBtn.isClicked(mousePos)) blackBtn.setFillColor(hoverColor);
+		else blackBtn.setFillColor(normalColor);
+
+		if (randomBtn.isClicked(mousePos)) randomBtn.setFillColor(hoverColor);
+		else randomBtn.setFillColor(normalColor);
+
+		whiteBtn.setOutlineColor(selectedSide == 0 ? selectedOutline : normalOutline);
+		blackBtn.setOutlineColor(selectedSide == 1 ? selectedOutline : normalOutline);
+		randomBtn.setOutlineColor(selectedSide == 2 ? selectedOutline : normalOutline);
+
+
 		while (auto event = win.pollEvent())
 		{
 			if (event->is<sf::Event::Closed>())
@@ -58,11 +89,14 @@ void MainMenu::run()
 				sf::Vector2i pos = mouseButtonPressed->position;
 				if (whiteBtn.isClicked(pos)) {
 					settings.whiteView = true;
+					selectedSide = 0;
 				}
 				else if (blackBtn.isClicked(pos)) {
 					settings.whiteView = false;
+					selectedSide = 1; 
 				}
 				else if (randomBtn.isClicked(pos)) {
+					selectedSide = 2;
 					if (rand() % 10 < 5)
 						settings.whiteView = true;
 					else
