@@ -12,6 +12,7 @@ class MainMenu
 	textButton colorBtn;
 	textButton multiplayerBtn;
 	textButton computerBtn;
+	textButton neuralNetBtn;
 	textButton playBtn;
 	imgButton whiteBtn;
 	imgButton blackBtn;

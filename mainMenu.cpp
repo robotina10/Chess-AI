@@ -13,7 +13,8 @@ MainMenu::MainMenu(sf::RenderWindow& win) : win(win),
 	randomBtn("img/random.png", { 0, 260 }, 1, 1),
 	multiplayerBtn("MULTIPLAYER", font, { 0, 350 }, 25, textCol),
 	computerBtn("COMPUTER", font, { 0, 420 }, 25, textCol),
-	playBtn("PLAY", font, { 0, 490 }, 25, textCol)
+	neuralNetBtn("NEURAL NETWORK", font, { 0, 490 }, 25, textCol),
+	playBtn("PLAY", font, { 0, 560 }, 25, textCol)
 {
 	// SFML 3: Font loading now uses openFromFile instead of loadFromFile
 	if (!font.openFromFile("font/celtig.ttf")) {
@@ -32,13 +33,21 @@ void MainMenu::setupButtons()
 
 	colorBtn.setRect({ -10, -10 }, { 20, 20 }, fillCol, outlineThickness, outlineCol, true);
 	float x = colorBtn.getPos().x;
+
 	whiteBtn.setRect({x, 0}, {0, 0}, fillCol, outlineThickness, outlineCol);
 	x = whiteBtn.getPos().x + whiteBtn.getSize().x;
+
 	blackBtn.setRect({ x + 10, 0 }, { 0, 0 }, fillCol, outlineThickness, outlineCol);
 	x = blackBtn.getPos().x + whiteBtn.getSize().x;
+
 	randomBtn.setRect({ x + 10, 0 }, { 0, 0 }, fillCol, outlineThickness, outlineCol);
+
 	multiplayerBtn.setRect({ -10, -10 }, { 20, 20 }, fillCol, outlineThickness, outlineCol, true);
+
 	computerBtn.setRect({ -10, -10 }, { 20, 20 }, fillCol, outlineThickness, outlineCol, true);
+
+	neuralNetBtn.setRect({ -10, -10 }, { 20, 20 }, fillCol, outlineThickness, outlineCol, true);
+
 	playBtn.setRect({ -10, -10 }, { 20, 20 }, fillCol, outlineThickness, outlineCol, true);
 }
 
@@ -73,6 +82,7 @@ void MainMenu::run()
 		if (randomBtn.isClicked(mousePos)) randomBtn.setFillColor(hoverColor);
 		else randomBtn.setFillColor(normalColor);
 
+
 		whiteBtn.setOutlineColor(selectedSide == 0 ? selectedOutline : normalOutline);
 		blackBtn.setOutlineColor(selectedSide == 1 ? selectedOutline : normalOutline);
 		randomBtn.setOutlineColor(selectedSide == 2 ? selectedOutline : normalOutline);
@@ -93,7 +103,7 @@ void MainMenu::run()
 				}
 				else if (blackBtn.isClicked(pos)) {
 					settings.whiteView = false;
-					selectedSide = 1; 
+					selectedSide = 1;
 				}
 				else if (randomBtn.isClicked(pos)) {
 					selectedSide = 2;
@@ -106,7 +116,10 @@ void MainMenu::run()
 					settings.mode = MULTIPLAYER;
 				}
 				else if (computerBtn.isClicked(pos)) {
-					settings.mode = AI;
+					settings.mode = COMPUTER;
+				}
+				else if (neuralNetBtn.isClicked(pos)) {
+					settings.mode = NEURAL_NET;
 				}
 				else if (playBtn.isClicked(pos)) {
 					isComplete = true;
@@ -127,6 +140,7 @@ void MainMenu::draw()
 	win.draw(randomBtn);
 	win.draw(multiplayerBtn);
 	win.draw(computerBtn);
+	win.draw(neuralNetBtn);
 	win.draw(playBtn);
 	win.display();
 }

@@ -108,8 +108,6 @@ class Board {
 	void scoreMoves(MoveList& moveList, int depth);
 	void fillZobristArrs();
 	U64 ZobristKey();
-	void recordHash(int val, int hashFlag, int depth);
-	int retrieveHash(int alpha, int beta, int depth);
 	void initTables();
 public:
 	Board copy(); 

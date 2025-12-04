@@ -84,37 +84,6 @@ U64 Board::ZobristKey()
     return key;
 }
 
-void Board::recordHash(int val, int hashFlag, int depth)
-{
-    U64 key = ZobristKey();
-    HashEntry* hash = &transTable[key & (TABLE_SIZE - 1)];
-
-    if (hash->key != key || hash->depth <= depth) {
-        hash->key = key;
-        hash->score = val;
-        hash->flags = hashFlag;
-        hash->depth = depth;
-    }
-}
-
-int Board::retrieveHash(int alpha, int beta, int depth)
-{
-    U64 key = ZobristKey();
-    HashEntry* hash = &transTable[key & (TABLE_SIZE - 1)];
-
-    if (hash->key == key) {
-        if (hash->depth >= depth) {
-            if (hash->flags == HASH_EXACT)
-                return hash->score;
-            if (hash->flags == HASH_ALPHA && hash->score <= alpha)
-                return alpha;
-            if (hash->flags == HASH_BETA && hash->score >= beta)
-                return beta;
-        }
-    }
-    return SCORE_UNKNOWN;
-}
-
 
 void pickMove(MoveList& moveList, int startIndex) {
     int bestIndex = startIndex;
@@ -186,7 +155,7 @@ int Board::alphaBeta(int alpha, int beta, int depthLeft, int ply)
         return DRAW_SCORE;
     }
 
-    U64 key = ZobristKey();
+    U64 key = currentHash;
     HashEntry* ttEntry = &transTable[key & (TABLE_SIZE - 1)];
     bool ttHit = (ttEntry->key == key);
     Move ttMove;
@@ -296,7 +265,7 @@ Move Board::searchPosition()
             break;
         }
 
-        U64 key = ZobristKey();
+        U64 key = currentHash;
         HashEntry* ttEntry = &transTable[key & (TABLE_SIZE - 1)];
         if (ttEntry->key == key && !ttEntry->bestMove.isNone()) {
             bestMove = ttEntry->bestMove;

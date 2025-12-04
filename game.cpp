@@ -35,14 +35,13 @@ void Game::startGame()
 		draw();
 		while (auto event = win.pollEvent())
 		{
-			if (settings.whiteView != chess.board.isWhiteTurn() && settings.mode == AI) {
+			if (settings.whiteView != chess.board.isWhiteTurn() && settings.mode == COMPUTER || settings.mode == NEURAL_NET) {
 				computer();
 				playSound();
 				if (handleGameOver()) {
 					return;
 				}
 			}
-
 			if (event->is<sf::Event::Closed>())
 			{
 				win.close();
@@ -155,44 +154,44 @@ void Game::startGame()
 
 void Game::computer()
 {
-	//neural Network
-	/*std::ofstream myMove("chessNeuralNet/input.txt");
-	myMove << chess.playedMoves.back().move.getStr();
+	if (settings.mode == NEURAL_NET) { 	//neural Network
+		std::ofstream myMove("chessNeuralNet/input.txt");
+		myMove << chess.playedMoves.back().move.getStr();
 
-	std::string venvPython = "chessNeuralNet/venv/Scripts/python.exe";
-	std::string scriptPath = "chessNeuralNet/main.py";
+		std::string venvPython = "chessNeuralNet/venv/Scripts/python.exe";
+		std::string scriptPath = "chessNeuralNet/main.py";
 
-	std::string command = venvPython + " " + scriptPath;
-	system(command.c_str());
+		std::string command = venvPython + " " + scriptPath;
+		system(command.c_str());
 
-	std::ifstream nnMove("chessNeuralNet/output.txt");
-	std::string moveStr;
-	std::getline(nnMove, moveStr);
-	std::cout << moveStr;
+		std::ifstream nnMove("chessNeuralNet/output.txt");
+		std::string moveStr;
+		std::getline(nnMove, moveStr);
+		std::cout << moveStr;
 
-	myMove.close();
-	nnMove.close();
+		myMove.close();
+		nnMove.close();
 
-	Move move;
-	for (int i = 0; i < chess.moveList.count; i++) {
-		if (chess.moveList.moves[i].getStr() == moveStr) {
-			move = chess.moveList.moves[i];
-			break;
+		Move move;
+		for (int i = 0; i < chess.moveList.count; i++) {
+			if (chess.moveList.moves[i].getStr() == moveStr) {
+				move = chess.moveList.moves[i];
+				break;
+			}
 		}
+
+		chess.playedMoves.push_back(Position(move, chess.board.getPosInfo()));
+		chess.board.makeMove(move);
+		chess.moveList.count = 0;
+		chess.board.generateLegalMoves(chess.moveList);
 	}
-
-	chess.playedMoves.push_back(Position(move, chess.board.getPosInfo()));
-	chess.board.makeMove(move);
-	chess.moveList.count = 0;
-	chess.board.generateLegalMoves(chess.moveList);*/
-	//"programmed ai"
-
-	Move move = chess.board.searchPosition();
-	chess.playedMoves.push_back(Position(move, chess.board.getPosInfo()));
-	chess.board.makeMove(move);
-	chess.moveList.count = 0;
-	chess.board.generateLegalMoves(chess.moveList);
-
+	else if (settings.mode == COMPUTER) { 	//"programmed ai"
+		Move move = chess.board.searchPosition();
+		chess.playedMoves.push_back(Position(move, chess.board.getPosInfo()));
+		chess.board.makeMove(move);
+		chess.moveList.count = 0;
+		chess.board.generateLegalMoves(chess.moveList);
+	}
 }
 
 bool Game::handleGameOver()

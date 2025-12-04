@@ -14,11 +14,11 @@ const sf::Color HIGHLIGHTED_BLACK(88, 88, 98);
 const sf::Color LAST_MOVE_WHITE(205, 210, 106);
 const sf::Color LAST_MOVE_BLACK(170, 162, 58);
 
-enum Mode { AI, MULTIPLAYER };
+enum Mode { COMPUTER, NEURAL_NET, MULTIPLAYER };
 
 struct Settings
 {
-	Mode mode = AI;
+	Mode mode = COMPUTER;
 	bool whiteView = true;
 };
 
