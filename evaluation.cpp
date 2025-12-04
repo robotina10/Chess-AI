@@ -17,21 +17,6 @@ inline U64 adjacentFiles(int sq) {
     return ((f & ~FileABB) >> 1) | ((f & ~FileHBB) << 1);
 }
 
-// Knight Attacks (Computed on fly to avoid global variable linker errors)
-U64 evalKnightAttacks(int sq) {
-    U64 att = 0;
-    U64 b = 1ULL << sq;
-    if ((b << 17) & ~FileABB) att |= (b << 17);
-    if ((b << 10) & ~(FileABB | (FileABB << 1))) att |= (b << 10);
-    if ((b >> 6) & ~(FileABB | (FileABB << 1))) att |= (b >> 6);
-    if ((b >> 15) & ~FileABB) att |= (b >> 15);
-    if ((b << 15) & ~FileHBB) att |= (b << 15);
-    if ((b << 6) & ~(FileHBB | (FileHBB >> 1))) att |= (b << 6);
-    if ((b >> 10) & ~(FileHBB | (FileHBB >> 1))) att |= (b >> 10);
-    if ((b >> 17) & ~FileHBB) att |= (b >> 17);
-    return att;
-}
-
 int mg_pawn_table[64] = {
       0,   0,   0,   0,   0,   0,  0,   0,
      98, 134,  61,  95,  68, 126, 34, -11,
@@ -179,9 +164,9 @@ void Board::initTables()
     for (int p = 0; p < 6; p++) {
         for (int i = 0; i < 64; i++) {
             midGameTables[p][i] = mg_value[p] + mg_tables[p][i];
-            midGameTables[p + 1][i] = mg_value[p] + mg_tables[p][FLIP(i)];
+            midGameTables[p * 2 + 1][i] = mg_value[p] + mg_tables[p][FLIP(i)];
             endGameTables[p][i] = eg_value[p] + eg_tables[p][i];
-            endGameTables[p + 1][i] = eg_value[p] + eg_tables[p][FLIP(i)];
+            endGameTables[p * 2 + 1][i] = eg_value[p] + eg_tables[p][FLIP(i)];
         }
     }
 }
@@ -191,7 +176,11 @@ const int DOUBLED_PAWN_PENALTY = -15;
 const int PASSED_PAWN_BONUS[8] = { 0, 5, 10, 20, 35, 60, 100, 200 };
 const int MOBILITY_BONUS = 5;
 const int SEMI_OPEN_FILE_PENALTY = -10;
-const int OPEN_FILE_PENALTY = -20;
+const int OPEN_FILE_PENALTY = -20;     
+const int BISHOP_PAIR_BONUS = 40;       
+const int ROOK_OPEN_FILE_BONUS = 25;   
+const int ROOK_SEMI_OPEN_FILE_BONUS = 15; 
+const int PAWN_SHIELD_BONUS = 10;
 
 int Board::eval()
 {
@@ -203,45 +192,41 @@ int Board::eval()
     U64 blackPawns = bb[bPawn];
     U64 allPieces = occupied;
 
+    if (piecesCount[wBishop] >= 2) {
+        midGame[White] += BISHOP_PAIR_BONUS;
+        endGame[White] += BISHOP_PAIR_BONUS;
+    }
+    if (piecesCount[bBishop] >= 2) {
+        midGame[Black] += BISHOP_PAIR_BONUS;
+        endGame[Black] += BISHOP_PAIR_BONUS;
+    }
+
     for (int i = 0; i < 12; i++) {
         U64 pieces = bb[i];
         int pieceType = i >> 1; // 0=K, 1=Q, 2=R, 3=B, 4=N, 5=P
-        int side = PCOLOR(i);   // 0=Black, 1=White (Since wPawn=11 is odd)
+        int side = PCOLOR(i);
 
         while (pieces) {
             int pos = bitScanForwardWithReset(pieces);
 
-            // 1. Base Material + PST
             midGame[side] += midGameTables[i][pos];
             endGame[side] += endGameTables[i][pos];
             gamePhase += gamePhaseInc[i];
 
-            // 2. Complex Heuristics
             int bonus = 0;
 
-            if (pieceType == 5) { // PAWNS
-                // A. Pawn Structure
+            if (pieceType == 5) { 
                 U64 myPawns = (side == White) ? whitePawns : blackPawns;
                 U64 oppPawns = (side == White) ? blackPawns : whitePawns;
                 U64 fMask = fileMask(pos);
                 U64 adjMask = adjacentFiles(pos);
 
-                // Doubled Pawn
-                if (popCount(myPawns & fMask) > 1)
-                    bonus += DOUBLED_PAWN_PENALTY;
+                if (popCount(myPawns & fMask) > 1) bonus += DOUBLED_PAWN_PENALTY;
+                if ((myPawns & adjMask) == 0) bonus += ISOLATED_PAWN_PENALTY;
 
-                // Isolated Pawn
-                if ((myPawns & adjMask) == 0)
-                    bonus += ISOLATED_PAWN_PENALTY;
-
-                // Passed Pawn
                 U64 passedMask = (fMask | adjMask);
-                if (side == White) {
-                    passedMask &= ((1ULL << pos) - 1); // Bits LOWER than pos
-                }
-                else {
-                    passedMask &= ~((1ULL << (pos + 1)) - 1); // Bits HIGHER than pos
-                }
+                if (side == White) passedMask &= ((1ULL << pos) - 1);
+                else passedMask &= ~((1ULL << (pos + 1)) - 1);
 
                 if ((passedMask & oppPawns) == 0) {
                     int advancedRank = (side == White) ? (6 - (pos / 8)) : ((pos / 8) - 1);
@@ -249,28 +234,58 @@ int Board::eval()
                         bonus += PASSED_PAWN_BONUS[advancedRank];
                 }
             }
-            else if (pieceType == 0) {
-                // King Safety (Semi-open / Open Files)
+            else if (pieceType == 2) { 
                 U64 fMask = fileMask(pos);
-
                 U64 myPawns = (side == White) ? whitePawns : blackPawns;
-                U64 oppPawns = (side == White) ? blackPawns : whitePawns;
 
+                if ((myPawns & fMask) == 0) {
+                    bonus += ROOK_SEMI_OPEN_FILE_BONUS;
+
+                    U64 oppPawns = (side == White) ? blackPawns : whitePawns;
+                    if ((oppPawns & fMask) == 0) {
+                        bonus += (ROOK_OPEN_FILE_BONUS - ROOK_SEMI_OPEN_FILE_BONUS);
+                    }
+                }
+
+                U64 attacks = rookAttack(pos, allPieces);
+                U64 friendly = (side == White) ? bb[Whites] : bb[Blacks];
+                attacks &= ~friendly;
+                bonus += popCount(attacks) * MOBILITY_BONUS;
+            }
+            else if (pieceType == 0) {
+                U64 myPawns = (side == White) ? whitePawns : blackPawns;
+
+                U64 kingZone = 0;
+                if (side == White) {
+                    if (pos < 56) {
+                        kingZone |= (1ULL << (pos + 8));
+                        if ((pos % 8) != 0) kingZone |= (1ULL << (pos + 7)); 
+                        if ((pos % 8) != 7) kingZone |= (1ULL << (pos + 9));
+                    }
+                }
+                else {
+                    if (pos > 7) {
+                        kingZone |= (1ULL << (pos - 8));
+                        if ((pos % 8) != 0) kingZone |= (1ULL << (pos - 9));
+                        if ((pos % 8) != 7) kingZone |= (1ULL << (pos - 7));
+                    }
+                }
+                bonus += popCount(kingZone & myPawns) * PAWN_SHIELD_BONUS;
+
+                U64 fMask = fileMask(pos);
+                U64 oppPawns = (side == White) ? blackPawns : whitePawns;
                 if ((myPawns & fMask) == 0)
                     bonus += (oppPawns & fMask) ? SEMI_OPEN_FILE_PENALTY : OPEN_FILE_PENALTY;
             }
             else {
-                // Mobility
                 U64 attacks = 0;
                 U64 friendly = (side == White) ? bb[Whites] : bb[Blacks];
 
-                if (pieceType == 4) // Knight
-                    attacks = evalKnightAttacks(pos);
-                else if (pieceType == 3) // Bishop
+                if (pieceType == 4) 
+                    attacks = knightAttacks[pos]; 
+                else if (pieceType == 3)
                     attacks = bishopAttack(pos, allPieces);
-                else if (pieceType == 2) // Rook
-                    attacks = rookAttack(pos, allPieces);
-                else if (pieceType == 1) // Queen
+                else if (pieceType == 1) 
                     attacks = bishopAttack(pos, allPieces) | rookAttack(pos, allPieces);
 
                 attacks &= ~friendly;
@@ -282,13 +297,11 @@ int Board::eval()
         }
     }
 
-    // Score relative to the side to move
     int midGameScore = midGame[whiteTurn] - midGame[OTHER(whiteTurn)];
     int endGameScore = endGame[whiteTurn] - endGame[OTHER(whiteTurn)];
 
     int midGamePhase = gamePhase;
-    if (midGamePhase > 24)
-        midGamePhase = 24;
+    if (midGamePhase > 24) midGamePhase = 24;
     int endGamePhase = 24 - midGamePhase;
 
     return (midGameScore * midGamePhase + endGameScore * endGamePhase) / 24;

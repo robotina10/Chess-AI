@@ -43,6 +43,8 @@ U64 noWeOne(U64 b);
 int bitScanForward(U64 bb);
 int bitScanForwardWithReset(U64& bb);
 
+extern U64 knightAttacks[64];
+
 // Counts the number of set bits (1s) in a 64-bit integer
 inline int popCount(U64 x) {
 	x -= (x >> 1) & 0x5555555555555555;
@@ -110,7 +112,7 @@ class Board {
 	int retrieveHash(int alpha, int beta, int depth);
 	void initTables();
 public:
-	Board copy(); //copy of itself
+	Board copy(); 
 	void init();
 
 	void printBB(U64 bb);

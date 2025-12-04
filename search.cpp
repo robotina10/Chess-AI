@@ -182,6 +182,10 @@ int Board::alphaBeta(int alpha, int beta, int depthLeft, int ply)
 {
     if (ply >= MAX_PLY) return eval();
 
+    if (ply > 0 && (threeFoldRepetitionRule() || fiftyMoveRule())) {
+        return DRAW_SCORE;
+    }
+
     U64 key = ZobristKey();
     HashEntry* ttEntry = &transTable[key & (TABLE_SIZE - 1)];
     bool ttHit = (ttEntry->key == key);
@@ -274,7 +278,7 @@ int Board::alphaBeta(int alpha, int beta, int depthLeft, int ply)
 
 Move Board::searchPosition()
 {
-    float timeLimit = 1000.0f;
+    float timeLimit = 1500.0f;
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
     Move bestMove;
