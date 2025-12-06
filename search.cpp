@@ -96,16 +96,22 @@ void pickMove(MoveList& moveList, int startIndex) {
     std::swap(moveList.scores[startIndex], moveList.scores[bestIndex]);
 }
 
-void Board::scoreMoves(MoveList& moveList, int ply)
+void Board::scoreMoves(MoveList& moveList, int ply, Move ttMove)
 {
     for (int i = 0; i < moveList.count; i++) {
         Move move = moveList.moves[i];
         int score = 0;
 
-        if (move.isCapture()) {
+        if (move == ttMove) {
+            score = 2000000;
+        }
+        else if (move.isCapture()) {
             int victim = move.getCapturedPiece() >> 1;
             int attacker = move.getPiece() >> 1;
             score = 1000000 + mvv_lva[victim][attacker];
+        }
+        else if (move.isPromotion() && move.getSpecialMove() == QUEEN_PROM) {
+            score = 950000;
         }
         else {
             if (killerMoves[ply][0] == move)
@@ -120,10 +126,17 @@ void Board::scoreMoves(MoveList& moveList, int ply)
 }
 
 
-int Board::quiesce(int alpha, int beta)
+int Board::QuiescenceSearch(int alpha, int beta)
 {
     int standPat = eval();
     if (standPat >= beta) return beta;
+
+    int BIG_DELTA = 1200; // queen value
+
+    if (standPat < alpha - BIG_DELTA) {
+        return alpha;
+    }
+
     if (alpha < standPat) alpha = standPat;
 
     MoveList moveList(218);
@@ -138,7 +151,7 @@ int Board::quiesce(int alpha, int beta)
         Move move = moveList.moves[i];
 
         makeMove(move);
-        int score = -quiesce(-beta, -alpha);
+        int score = -QuiescenceSearch(-beta, -alpha);
         unMakeMove(move, posInfo);
 
         if (score >= beta) return beta;
@@ -169,7 +182,7 @@ int Board::alphaBeta(int alpha, int beta, int depthLeft, int ply)
         }
     }
 
-    if (depthLeft <= 0) return quiesce(alpha, beta);
+    if (depthLeft <= 0) return QuiescenceSearch(alpha, beta);
 
     MoveList moveList(218);
     generateLegalMoves(moveList);
@@ -179,7 +192,7 @@ int Board::alphaBeta(int alpha, int beta, int depthLeft, int ply)
         return DRAW_SCORE;
     }
 
-    scoreMoves(moveList, ply);
+    scoreMoves(moveList, ply, (ttHit) ? ttMove: Move());
     if (ttHit && !ttMove.isNone()) {
         for (int i = 0; i < moveList.count; i++) {
             if (moveList.moves[i] == ttMove) {

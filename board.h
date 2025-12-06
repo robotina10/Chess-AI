@@ -103,9 +103,9 @@ class Board {
 	void setCastlingRight(CastlingRights right);
 
 	int alphaBeta(int alpha, int beta, int depthLeft, int maxDepth);
-	int quiesce(int alpha, int beta);
+	int QuiescenceSearch(int alpha, int beta);
 	int eval();
-	void scoreMoves(MoveList& moveList, int depth);
+	void scoreMoves(MoveList& moveList, int depth, Move ttMove = Move());
 	void fillZobristArrs();
 	U64 ZobristKey();
 	void initTables();
